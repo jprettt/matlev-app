@@ -148,7 +148,7 @@ class MatlevController extends Controller
     public function upload(Request $request, $levelId)
     {
         $request->validate([
-            'pdf_file' => 'required|mimes:pdf|max:10240', // Max 10MB PDF
+            'pdf_file' => 'required|mimes:pdf|max:10240',
         ]);
 
         $maturityLevel = MaturityLevel::findOrFail($levelId);
@@ -160,8 +160,7 @@ class MatlevController extends Controller
         try {
             DB::transaction(function () use ($request, $maturityLevel) {
                 $existing = EvidenceUpload::where('maturity_level_id', $maturityLevel->id)->lockForUpdate()->first();
-                
-                // Jika sudah ada dan statusnya bukan rejected, maka tidak boleh upload
+
                 if ($existing && $existing->status !== 'rejected') {
                     throw new \Exception('Slot ini telah diisi oleh rekan tim lain beberapa saat lalu!');
                 }
@@ -171,7 +170,6 @@ class MatlevController extends Controller
                 $path = $file->storeAs('evidence_pdfs', $filename, 'public');
 
                 if ($existing && $existing->status === 'rejected') {
-                    // Update file revisi
                     $existing->update([
                         'user_id' => Auth::id(),
                         'file_path' => $path,
@@ -181,7 +179,6 @@ class MatlevController extends Controller
                         'uploaded_at' => now(),
                     ]);
                 } else {
-                    // Buat upload baru
                     EvidenceUpload::create([
                         'maturity_level_id' => $maturityLevel->id,
                         'user_id' => Auth::id(),
@@ -194,9 +191,54 @@ class MatlevController extends Controller
             });
 
             return redirect()->back()->with('success', 'Bukti dokumen PDF berhasil diunggah dan sedang menunggu penilaian!');
-
         } catch (\Exception $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
+    }
+
+    public function exportReceipt()
+    {
+        $uploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
+            ->where('user_id', Auth::id())
+            ->orderByDesc('uploaded_at')
+            ->get();
+
+        $filename = 'bukti-terima-' . Auth::user()->name . '-' . now()->format('YmdHis') . '.csv';
+
+        $rows = [
+            ['No', 'Kriteria', 'Sub Kriteria', 'Level', 'Status Verifikasi', 'Catatan', 'Tanggal Upload'],
+        ];
+
+        foreach ($uploads as $index => $upload) {
+            $rows[] = [
+                $index + 1,
+                $upload->maturityLevel->subkriteria->kriteria->title ?? '-',
+                $upload->maturityLevel->subkriteria->title ?? '-',
+                $upload->maturityLevel->level ?? '-',
+                ucfirst($upload->status ?? 'pending'),
+                $upload->rejection_note ?? '-',
+                $upload->uploaded_at?->format('d-m-Y H:i') ?? '-',
+            ];
+        }
+
+        return response()->streamDownload(function () use ($rows) {
+            $handle = fopen('php://output', 'w');
+            foreach ($rows as $row) {
+                fputcsv($handle, $row);
+            }
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function exportReceiptPdf()
+    {
+        $uploads = EvidenceUpload::with(['maturityLevel.subkriteria.kriteria'])
+            ->where('user_id', Auth::id())
+            ->orderByDesc('uploaded_at')
+            ->get();
+
+        return view('user.receipt-pdf', compact('uploads'));
     }
 }

@@ -9,14 +9,23 @@ class EvidenceUpload extends Model
 {
     use HasFactory;
 
+    protected $table = 'evidence_uploads';
+
     protected $fillable = [
         'maturity_level_id',
         'user_id',
         'file_path',
         'original_filename',
-        'status',          // Tambahkan ini
-        'rejection_note',  // Tambahkan ini
+        'status',
+        'rejection_note',
         'uploaded_at',
+    ];
+
+    /**
+     * Ensure uploaded_at is cast to a DateTime (Carbon) instance.
+     */
+    protected $casts = [
+        'uploaded_at' => 'datetime',
     ];
 
     public function user()
@@ -26,6 +35,6 @@ class EvidenceUpload extends Model
 
     public function maturityLevel()
     {
-        return $this->belongsTo(MaturityLevel::class);
+        return $this->belongsTo(MaturityLevel::class, 'maturity_level_id');
     }
 }

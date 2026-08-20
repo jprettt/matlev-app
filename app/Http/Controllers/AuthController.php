@@ -9,16 +9,26 @@ use App\Models\User;
 
 class AuthController extends Controller
 {
-    // Menampilkan halaman login/register
+    protected function routeByRole(?User $user = null): string
+    {
+        $role = $user?->role ?? Auth::user()?->role ?? 'user';
+
+        return match ($role) {
+            'admin' => route('admin.dashboard'),
+            'atasan' => route('atasan.dashboard'),
+            default => route('user.dashboard'),
+        };
+    }
+
     public function showLoginForm()
     {
         if (Auth::check()) {
-            return redirect()->route('user.dashboard');
+            return redirect($this->routeByRole(Auth::user()));
         }
+
         return view('auth.login');
     }
 
-    // Memproses Login
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -28,7 +38,8 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect()->intended(route('user.dashboard'));
+
+            return redirect()->intended($this->routeByRole(Auth::user()));
         }
 
         return back()->withErrors([
@@ -36,27 +47,28 @@ class AuthController extends Controller
         ])->onlyInput('email');
     }
 
-    // Memproses Registrasi Akun Baru
     public function register(Request $request)
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:6'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'unit_kerja' => ['nullable', 'string', 'max:255'],
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => 'user',
+            'unit_kerja' => $request->unit_kerja ?? 'Unit Kerja Baru',
         ]);
 
         Auth::login($user);
 
-        return redirect()->route('user.dashboard')->with('success', 'Akun berhasil dibuat! Selamat datang di Portal Maturity Level K3 PLN.');
+        return redirect($this->routeByRole($user))->with('success', 'Akun berhasil dibuat! Selamat datang di Portal Maturity Level K3 PLN.');
     }
 
-    // Memproses Logout
     public function logout(Request $request)
     {
         Auth::logout();

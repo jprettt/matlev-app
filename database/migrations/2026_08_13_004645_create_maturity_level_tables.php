@@ -7,42 +7,71 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        // Update tabel users bawaan
         Schema::table('users', function (Blueprint $table) {
-            if (!Schema::hasColumn('users', 'role')) {
-                $table->enum('role', ['admin', 'user'])->default('user')->after('email');
+            if (! Schema::hasColumn('users', 'role')) {
+                $table->enum('role', ['user', 'admin', 'atasan'])->default('user')->after('email');
+            } else {
+                $table->enum('role', ['user', 'admin', 'atasan'])->default('user')->change();
             }
-            if (!Schema::hasColumn('users', 'unit_kerja')) {
+
+            if (! Schema::hasColumn('users', 'unit_kerja')) {
                 $table->string('unit_kerja')->nullable()->after('role');
             }
         });
 
-        // Tabel Kriteria / Elemen K3
-        Schema::create('kriterias', function (Blueprint $table) {
-            $table->id();
-            $table->string('kode_elemen'); // Contoh: "1.1", "1.2"
-            $table->string('nama_elemen');
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('criterias')) {
+            Schema::create('criterias', function (Blueprint $table) {
+                $table->id();
+                $table->string('code');
+                $table->string('title');
+                $table->timestamps();
+            });
+        }
 
-        // Tabel Subkriteria / Indikator & Pengajuan Dokumen
-        Schema::create('subkriterias', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('kriteria_id')->constrained('kriterias')->onDelete('cascade');
-            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
-            $table->text('deskripsi_indikator');
-            $table->string('file_path')->nullable();
-            $table->string('file_original_name')->nullable();
-            $table->enum('status', ['Belum Upload', 'Pending', 'Disetujui', 'Revisi'])->default('Belum Upload');
-            $table->integer('skor_level')->nullable(); // 1 - 5
-            $table->text('catatan_admin')->nullable();
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('sub_criterias')) {
+            Schema::create('sub_criterias', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('criteria_id')->constrained('criterias')->onDelete('cascade');
+                $table->string('code');
+                $table->string('title');
+                $table->text('description')->nullable();
+                $table->string('pic')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        if (! Schema::hasTable('maturity_levels')) {
+            Schema::create('maturity_levels', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('sub_criteria_id')->constrained('sub_criterias')->onDelete('cascade');
+                $table->unsignedTinyInteger('level');
+                $table->text('description')->nullable();
+                $table->text('evidence_requirement')->nullable();
+                $table->timestamps();
+                $table->unique(['sub_criteria_id', 'level']);
+            });
+        }
+
+        if (! Schema::hasTable('evidence_uploads')) {
+            Schema::create('evidence_uploads', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('maturity_level_id')->unique()->constrained('maturity_levels')->onDelete('cascade');
+                $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+                $table->string('file_path');
+                $table->string('original_filename');
+                $table->string('status')->default('pending');
+                $table->text('rejection_note')->nullable();
+                $table->timestamp('uploaded_at');
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('subkriterias');
-        Schema::dropIfExists('kriterias');
+        Schema::dropIfExists('evidence_uploads');
+        Schema::dropIfExists('maturity_levels');
+        Schema::dropIfExists('sub_criterias');
+        Schema::dropIfExists('criterias');
     }
 };
