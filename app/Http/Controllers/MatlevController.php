@@ -1,0 +1,202 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Kriteria;
+use App\Models\MaturityLevel;
+use App\Models\EvidenceUpload;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+
+class MatlevController extends Controller
+{
+    /**
+     * Helper untuk menghitung statistik data Maturity Level K3
+     */
+    private function getStatsAndData()
+    {
+        $criterias = Kriteria::with(['subKriterias.maturityLevels.evidenceUpload.user'])->get();
+
+        $totalSlots = 0;
+        $totalApproved = 0;
+        $totalPending = 0;
+        $totalRejected = 0;
+        $rejectedItems = [];
+        $allHistories = [];
+
+        foreach ($criterias as $crit) {
+            foreach ($crit->subKriterias as $sub) {
+                foreach ($sub->maturityLevels as $lvl) {
+                    $totalSlots++;
+                    if ($lvl->evidenceUpload) {
+                        $st = $lvl->evidenceUpload->status ?? 'pending';
+                        if ($st == 'approved') {
+                            $totalApproved++;
+                        } elseif ($st == 'pending') {
+                            $totalPending++;
+                        } elseif ($st == 'rejected') {
+                            $totalRejected++;
+                            $rejectedItems[] = [
+                                'criteria_id' => $crit->id,
+                                'criteria_code' => $crit->code ?? $crit->kode ?? '',
+                                'criteria' => $crit->title ?? $crit->nama ?? 'Kriteria',
+                                'sub_code' => $sub->code ?? $sub->kode ?? '',
+                                'sub' => $sub->title ?? $sub->nama ?? 'Sub Kriteria',
+                                'level' => $lvl->level,
+                                'requirement' => $lvl->evidence_requirement,
+                                'upload' => $lvl->evidenceUpload,
+                            ];
+                        }
+
+                        // Kumpulkan riwayat aktivitas
+                        $allHistories[] = [
+                            'criteria_code' => $crit->code ?? $crit->kode ?? '',
+                            'criteria_title' => $crit->title ?? $crit->nama ?? '',
+                            'sub_code' => $sub->code ?? $sub->kode ?? '',
+                            'sub_title' => $sub->title ?? $sub->nama ?? '',
+                            'level' => $lvl->level,
+                            'requirement' => $lvl->evidence_requirement,
+                            'filename' => $lvl->evidenceUpload->original_filename,
+                            'file_path' => $lvl->evidenceUpload->file_path,
+                            'status' => $st,
+                            'note' => $lvl->evidenceUpload->rejection_note,
+                            'uploader' => $lvl->evidenceUpload->user->name ?? 'User',
+                            'time' => $lvl->evidenceUpload->uploaded_at ?? $lvl->evidenceUpload->created_at,
+                        ];
+                    }
+                }
+            }
+        }
+
+        // Urutkan riwayat dari yang terbaru
+        usort($allHistories, function ($a, $b) {
+            return strtotime($b['time']) <=> strtotime($a['time']);
+        });
+
+        $globalPercent = $totalSlots > 0 ? round(($totalApproved / $totalSlots) * 100) : 0;
+
+        $stats = [
+            'totalSlots' => $totalSlots,
+            'totalApproved' => $totalApproved,
+            'totalPending' => $totalPending,
+            'totalRejected' => $totalRejected,
+            'globalPercent' => $globalPercent,
+            'totalUploaded' => $totalApproved + $totalPending + $totalRejected,
+        ];
+
+        return compact('criterias', 'stats', 'rejectedItems', 'allHistories');
+    }
+
+    /**
+     * Halaman 1: Beranda & Landing Page dengan Hero Slider (Fore Coffee Theme)
+     */
+    public function dashboard()
+    {
+        $data = $this->getStatsAndData();
+        return view('user.dashboard', $data);
+    }
+
+    /**
+     * Halaman 2: Daftar Kriteria & Form Upload Bukti Dokumen
+     */
+    public function kriteria()
+    {
+        $data = $this->getStatsAndData();
+        return view('user.kriteria', $data);
+    }
+
+    /**
+     * Halaman 3: Dokumen yang Perlu Revisi (Ditolak)
+     */
+    public function revisi()
+    {
+        $data = $this->getStatsAndData();
+        return view('user.revisi', $data);
+    }
+
+    /**
+     * Halaman 4: Riwayat & Log Aktivitas Pengunggahan
+     */
+    public function riwayat()
+    {
+        $data = $this->getStatsAndData();
+        return view('user.riwayat', $data);
+    }
+
+    /**
+     * Halaman 5: Panduan Penggunaan & Kerangka Maturity Level K3
+     */
+    public function panduan()
+    {
+        $data = $this->getStatsAndData();
+        return view('user.panduan', $data);
+    }
+
+    /**
+     * Backward compatibility alias untuk index
+     */
+    public function index()
+    {
+        return $this->dashboard();
+    }
+
+    /**
+     * Process Upload File Bukti (First-Come First-Served Engine)
+     * Tidak mengubah alur kerja upload asli
+     */
+    public function upload(Request $request, $levelId)
+    {
+        $request->validate([
+            'pdf_file' => 'required|mimes:pdf|max:10240', // Max 10MB PDF
+        ]);
+
+        $maturityLevel = MaturityLevel::findOrFail($levelId);
+
+        if ($maturityLevel->evidenceUpload && $maturityLevel->evidenceUpload->status !== 'rejected') {
+            return redirect()->back()->with('error', 'Gagal: Slot indikator kematangan ini sudah diisi oleh ' . $maturityLevel->evidenceUpload->user->name);
+        }
+
+        try {
+            DB::transaction(function () use ($request, $maturityLevel) {
+                $existing = EvidenceUpload::where('maturity_level_id', $maturityLevel->id)->lockForUpdate()->first();
+                
+                // Jika sudah ada dan statusnya bukan rejected, maka tidak boleh upload
+                if ($existing && $existing->status !== 'rejected') {
+                    throw new \Exception('Slot ini telah diisi oleh rekan tim lain beberapa saat lalu!');
+                }
+
+                $file = $request->file('pdf_file');
+                $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
+                $path = $file->storeAs('evidence_pdfs', $filename, 'public');
+
+                if ($existing && $existing->status === 'rejected') {
+                    // Update file revisi
+                    $existing->update([
+                        'user_id' => Auth::id(),
+                        'file_path' => $path,
+                        'original_filename' => $file->getClientOriginalName(),
+                        'status' => 'pending',
+                        'rejection_note' => null,
+                        'uploaded_at' => now(),
+                    ]);
+                } else {
+                    // Buat upload baru
+                    EvidenceUpload::create([
+                        'maturity_level_id' => $maturityLevel->id,
+                        'user_id' => Auth::id(),
+                        'file_path' => $path,
+                        'original_filename' => $file->getClientOriginalName(),
+                        'status' => 'pending',
+                        'uploaded_at' => now(),
+                    ]);
+                }
+            });
+
+            return redirect()->back()->with('success', 'Bukti dokumen PDF berhasil diunggah dan sedang menunggu penilaian!');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+}
