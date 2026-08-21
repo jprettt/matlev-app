@@ -149,14 +149,23 @@
                                 @elseif($history['status'] == 'rejected')
                                     <span class="inline-flex items-center gap-1 bg-rose-50 text-rose-800 border border-rose-200 px-2.5 py-1 rounded-full text-[11px] font-bold">
                                         <span>✕</span>
-                                        <span>Perlu Revisi</span>
+                                        <span>Ditolak / Perlu Revisi</span>
+                                    </span>
+                                @elseif($history['status'] == 'deleted')
+                                    <span class="inline-flex items-center gap-1 bg-stone-100 text-stone-700 border border-stone-300 px-2.5 py-1 rounded-full text-[11px] font-bold">
+                                        <span>🗑</span>
+                                        <span>File Dihapus</span>
                                     </span>
                                 @endif
                             </td>
 
                             <!-- Catatan Evaluator -->
                             <td class="p-4 sm:px-6 text-xs text-stone-500 max-w-xs">
-                                @if($history['note'])
+                                @if($history['status'] == 'deleted')
+                                    <span class="text-rose-800 bg-rose-50/70 p-1.5 rounded-lg border border-rose-100 block">
+                                        File dihapus{{ $history['deleted_by'] ? ' oleh ' . $history['deleted_by'] : '' }}{{ $history['deleted_at'] ? ' pada ' . \Carbon\Carbon::parse($history['deleted_at'])->format('d M Y H:i') : '' }}.
+                                    </span>
+                                @elseif($history['note'])
                                     <span class="text-rose-800 italic bg-rose-50/70 p-1.5 rounded-lg border border-rose-100 block">
                                         "{{ $history['note'] }}"
                                     </span>
@@ -168,14 +177,18 @@
                             <!-- Aksi -->
                             <td class="p-4 sm:px-6 text-right whitespace-nowrap">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <a href="{{ asset('storage/' . $history['file_path']) }}" target="_blank" 
-                                       class="px-2.5 py-1 bg-white border border-stone-300 hover:border-fore-600 hover:text-fore-900 text-stone-700 text-xs font-semibold rounded-lg transition shadow-2xs">
-                                        Preview
-                                    </a>
-                                    <a href="{{ asset('storage/' . $history['file_path']) }}" download 
-                                       class="px-2.5 py-1 bg-fore-900 hover:bg-fore-800 text-white text-xs font-semibold rounded-lg transition shadow-2xs">
-                                        Unduh
-                                    </a>
+                                    @if($history['status'] !== 'deleted')
+                                        <a href="{{ asset('storage/' . $history['file_path']) }}" target="_blank" 
+                                           class="px-2.5 py-1 bg-white border border-stone-300 hover:border-fore-600 hover:text-fore-900 text-stone-700 text-xs font-semibold rounded-lg transition shadow-2xs">
+                                            Preview
+                                        </a>
+                                        <a href="{{ asset('storage/' . $history['file_path']) }}" download 
+                                           class="px-2.5 py-1 bg-fore-900 hover:bg-fore-800 text-white text-xs font-semibold rounded-lg transition shadow-2xs">
+                                            Unduh
+                                        </a>
+                                    @else
+                                        <span class="text-[11px] text-stone-400">File fisik sudah dihapus</span>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

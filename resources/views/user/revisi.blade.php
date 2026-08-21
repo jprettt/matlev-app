@@ -33,6 +33,10 @@
     @if(count($rejectedItems) > 0)
         <div class="space-y-4">
             @foreach($rejectedItems as $item)
+                @php
+                    $currentRevision = ($item['current_revision'] ?? null)?->status === 'pending' ? $item['current_revision'] : null;
+                    $previousRevision = $item['upload']->revisions->first(fn ($revision) => !$revision->is_current && $revision->status !== 'deleted');
+                @endphp
                 <div class="bg-white p-6 rounded-3xl border-2 border-rose-200 shadow-sm flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 hover:shadow-md transition-shadow">
                     
                     <!-- Left: Details & Rejection Note -->
@@ -68,21 +72,57 @@
                         </div>
 
                         <div class="text-[11px] text-stone-400 flex items-center gap-2">
-                            <span>File sebelumnya: <strong class="text-stone-600">{{ $item['upload']->original_filename }}</strong></span>
+                            <span>File sebelumnya: <strong class="text-stone-600">{{ $previousRevision->original_filename ?? $item['upload']->original_filename }}</strong></span>
                             <span>•</span>
-                            <a href="{{ asset('storage/' . $item['upload']->file_path) }}" target="_blank" class="text-fore-900 hover:underline font-bold">
-                                Unduh File Lama
+                            <a href="{{ asset('storage/' . ($previousRevision->file_path ?? $item['upload']->file_path)) }}" target="_blank" class="text-fore-900 hover:underline font-bold">
+                                Preview File Lama
                             </a>
                         </div>
+
+                        @if($item['upload']->revisions->isNotEmpty())
+                            <div class="bg-stone-50 border border-stone-200 rounded-2xl p-3 space-y-2">
+                                <p class="text-[11px] font-extrabold uppercase tracking-wider text-stone-600">Riwayat Revisi</p>
+                                @foreach($item['upload']->revisions as $revision)
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
+                                        <div>
+                                            <span class="font-bold text-stone-700">Versi {{ $revision->version_number }}: {{ $revision->original_filename }}</span>
+                                            <span class="text-stone-400">oleh {{ $revision->user->name ?? '-' }} pada {{ $revision->uploaded_at?->format('d M Y H:i') ?? '-' }}</span>
+                                            @if($revision->status === 'deleted')
+                                                <p class="text-rose-700 font-semibold">File dihapus oleh {{ $revision->deletedBy->name ?? '-' }} pada {{ $revision->deleted_at?->format('d M Y H:i') ?? '-' }}.</p>
+                                            @endif
+                                        </div>
+                                        @if($revision->status !== 'deleted' && !($revision->is_current && $item['upload']->status === 'rejected'))
+                                            <div class="flex gap-2 shrink-0">
+                                                <a href="{{ asset('storage/' . $revision->file_path) }}" target="_blank" class="text-fore-900 font-bold hover:underline">Preview</a>
+                                                <form action="{{ route('documents.revisions.delete', $revision) }}" method="POST" onsubmit="return confirm('Hapus file revisi ini? Riwayat penghapusannya tetap dicatat.')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="text-rose-700 font-bold hover:underline">Hapus File</button>
+                                                </form>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Right: Form Re-upload Revisi (Fungsionalitas Asli) -->
                     <div class="w-full lg:w-80 bg-cream-100 p-4 sm:p-5 rounded-2xl border border-stone-200 shrink-0 space-y-3">
                         <div class="flex items-center gap-2 text-xs font-bold text-stone-800">
                             <span>🔄</span>
-                            <span>Unggah Berkas Pengganti:</span>
+                            <span>Ganti Menjadi File Revisi:</span>
                         </div>
 
+                        @if($currentRevision)
+                            <p class="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2">File revisi terbaru sedang menunggu verifikasi.</p>
+                            <a href="{{ asset('storage/' . $currentRevision->file_path) }}" target="_blank" class="block w-full text-center bg-white border border-stone-300 text-stone-800 py-2 rounded-lg text-xs font-bold">Preview File Revisi Terbaru</a>
+                            <form action="{{ route('documents.revisions.delete', $currentRevision) }}" method="POST" onsubmit="return confirm('Hapus file revisi ini? Level akan tetap ditampilkan sebagai perlu revisi.')">
+                                @csrf
+                                @method('DELETE')
+                                <button class="w-full text-xs font-bold py-2.5 px-4 rounded-lg bg-white border border-rose-300 text-rose-700 hover:bg-rose-50">Hapus File Revisi</button>
+                            </form>
+                        @else
                         <form x-data="{ selectedFile: false }" action="{{ route('matlev.upload', $item['upload']->maturity_level_id) }}" method="POST" enctype="multipart/form-data" class="space-y-3">
                             @csrf
                             <input type="file" name="pdf_file" accept="application/pdf" required @change="selectedFile = true"
@@ -95,6 +135,7 @@
                                 <span>&rarr;</span>
                             </button>
                         </form>
+                        @endif
                         <p class="text-[10px] text-stone-400 text-center">Format dokumen: PDF maks. 10MB</p>
                     </div>
 

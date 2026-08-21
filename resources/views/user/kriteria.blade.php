@@ -115,7 +115,12 @@
                             <!-- 5 Level Cards Grid -->
                             <div class="grid grid-cols-1 md:grid-cols-5 gap-3.5">
                                 @forelse($sub->maturityLevels as $lvl)
-                                    <div class="bg-white p-3.5 rounded-2xl border border-stone-200/90 shadow-xs flex flex-col justify-between hover:border-fore-300 transition-colors">
+                                    @php
+                                        $previousLevel = $sub->maturityLevels->firstWhere('level', $lvl->level - 1);
+                                        $canUpload = $lvl->level === 1 || ($previousLevel && $previousLevel->evidenceUpload);
+                                        $currentRevision = $lvl->evidenceUpload?->revisions->first(fn ($revision) => $revision->is_current && $revision->status !== 'deleted');
+                                    @endphp
+                                    <div class="{{ $canUpload ? 'bg-white' : 'bg-stone-50' }} p-3.5 rounded-2xl border border-stone-200/90 shadow-xs flex flex-col justify-between hover:border-fore-300 transition-colors">
                                         <div>
                                             <div class="flex items-center justify-between mb-2">
                                                 <span class="px-2 py-0.5 bg-stone-100 text-fore-900 font-extrabold text-[11px] rounded-md border border-stone-200">
@@ -159,6 +164,17 @@
                                                                 Unduh
                                                             </a>
                                                         </div>
+                                                        @if($currentRevision)
+                                                            <div class="mt-2 pt-2 border-t border-amber-200 space-y-1.5">
+                                                                <p class="text-[10px] text-amber-800 font-semibold">File revisi sedang menunggu verifikasi.</p>
+                                                                <a href="{{ asset('storage/' . $currentRevision->file_path) }}" target="_blank" class="block w-full text-center bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 py-1.5 rounded text-[10px] font-semibold">Preview File Revisi</a>
+                                                                <form action="{{ route('documents.revisions.delete', $currentRevision) }}" method="POST" onsubmit="return confirm('Hapus file revisi ini? Level akan kembali berstatus perlu revisi.')">
+                                                                    @csrf
+                                                                    @method('DELETE')
+                                                                    <button class="w-full text-[10px] font-bold py-1.5 px-2 rounded-lg bg-white border border-rose-300 text-rose-700 hover:bg-rose-50">Hapus File Revisi</button>
+                                                                </form>
+                                                            </div>
+                                                        @endif
                                                     </div>
 
                                                 @elseif($st == 'approved')
@@ -213,7 +229,9 @@
                                                             <p><strong>Waktu Upload:</strong> {{ $lvl->evidenceUpload->uploaded_at?->format('d M Y H:i') ?? '-' }} WIB</p>
                                                         </div>
 
-                                                        <!-- Form Re-upload Revisi (Fungsionalitas Asli) -->
+                                                        @if($canUpload)
+                                                        <a href="{{ asset('storage/' . $lvl->evidenceUpload->file_path) }}" target="_blank" class="block w-full text-center bg-white border border-rose-300 text-rose-900 hover:bg-rose-100 py-1.5 rounded text-[10px] font-semibold transition">Preview File Lama</a>
+                                                        <!-- Form Re-upload Revisi -->
                                                         <form action="{{ route('matlev.upload', $lvl->id) }}" method="POST" enctype="multipart/form-data" class="space-y-1.5">
                                                             @csrf
                                                             <input type="file" name="pdf_file" accept="application/pdf" required @change="selectedFile = true"
@@ -225,10 +243,14 @@
                                                                 Upload Revisi
                                                             </button>
                                                         </form>
+                                                        @else
+                                                            <p class="text-[10px] text-stone-500 bg-stone-100 border border-stone-200 rounded-lg p-2">Upload level sebelumnya terlebih dahulu.</p>
+                                                        @endif
                                                     </div>
                                                 @endif
 
                                             @else
+                                                @if($canUpload)
                                                 <!-- Belum Ada Dokumen / Form Upload Baru (Fungsionalitas Asli) -->
                                                 <form x-data="{ selectedFile: false }" action="{{ route('matlev.upload', $lvl->id) }}" method="POST" enctype="multipart/form-data" class="space-y-2">
                                                     @csrf
@@ -241,6 +263,55 @@
                                                         Upload PDF
                                                     </button>
                                                 </form>
+                                                @else
+                                                    <p class="text-[10px] text-stone-500 bg-stone-100 border border-stone-200 rounded-lg p-2">Upload Level {{ $lvl->level - 1 }} terlebih dahulu.</p>
+                                                @endif
+                                            @endif
+
+                                            @if($lvl->evidenceUpload && $lvl->evidenceUpload->status !== 'rejected')
+                                                @php
+                                                    $document = $lvl->evidenceUpload;
+                                                    $myPermission = $document->permissionRequests->first(fn ($permission) => (int) $permission->requester_id === (int) Auth::id() && $permission->status === 'approved' && is_null($permission->used_at));
+                                                    $isOwner = (int) $document->user_id === (int) Auth::id();
+                                                    $canEdit = $isOwner || ($myPermission && $myPermission->action === 'edit');
+                                                    $canDelete = $isOwner || ($myPermission && $myPermission->action === 'delete');
+                                                @endphp
+                                                <div class="mt-2 pt-2 border-t border-stone-100 space-y-1.5">
+                                                    @if($canEdit || $canDelete)
+                                                        @if($myPermission)
+                                                            <p class="text-[10px] text-emerald-700 font-bold">Izin pemilik disetujui untuk aksi {{ $myPermission->action === 'edit' ? 'penggantian' : 'penghapusan' }}.</p>
+                                                        @endif
+                                                        @if($canEdit)
+                                                            <form action="{{ route('documents.edit', $document) }}" method="POST" enctype="multipart/form-data" class="space-y-1">
+                                                                @csrf
+                                                                <input type="file" name="pdf_file" accept="application/pdf" required class="block w-full text-[10px] text-stone-500 file:mr-1 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:bg-blue-100 file:text-blue-800 cursor-pointer">
+                                                                <button class="w-full text-[10px] font-bold py-1.5 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Ganti Dokumen</button>
+                                                            </form>
+                                                        @endif
+                                                        @if($canDelete)
+                                                            <form action="{{ route('documents.delete', $document) }}" method="POST" onsubmit="return confirm('Hapus dokumen ini?')">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button class="w-full text-[10px] font-bold py-1.5 px-2 rounded-lg bg-white border border-rose-300 text-rose-700 hover:bg-rose-50">Hapus Dokumen</button>
+                                                            </form>
+                                                        @endif
+                                                    @elseif($document->permissionRequests->first(fn ($permission) => (int) $permission->requester_id === (int) Auth::id() && $permission->status === 'pending'))
+                                                        <p class="text-[10px] text-amber-700 font-semibold">Permintaan izin sedang menunggu persetujuan pemilik.</p>
+                                                    @else
+                                                        <div class="grid grid-cols-2 gap-1.5">
+                                                            <form action="{{ route('documents.permission.request', $document) }}" method="POST">
+                                                                @csrf
+                                                                <input type="hidden" name="action" value="edit">
+                                                                <button class="w-full text-[10px] font-bold py-1.5 px-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100">Minta Izin Edit</button>
+                                                            </form>
+                                                            <form action="{{ route('documents.permission.request', $document) }}" method="POST">
+                                                                @csrf
+                                                                <input type="hidden" name="action" value="delete">
+                                                                <button class="w-full text-[10px] font-bold py-1.5 px-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100">Minta Izin Hapus</button>
+                                                            </form>
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             @endif
                                         </div>
                                     </div>

@@ -37,4 +37,14 @@ class EvidenceUpload extends Model
     {
         return $this->belongsTo(MaturityLevel::class, 'maturity_level_id');
     }
+
+    public function permissionRequests()
+    {
+        return $this->hasMany(DocumentPermissionRequest::class);
+    }
+
+    public function revisions()
+    {
+        return $this->hasMany(EvidenceRevision::class)->orderByDesc('version_number');
+    }
 }

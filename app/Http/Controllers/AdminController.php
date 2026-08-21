@@ -161,6 +161,10 @@ class AdminController extends Controller
             'status' => $request->status,
             'rejection_note' => $request->status === 'rejected' ? ($request->rejection_note ?? 'Dokumen tidak sesuai dengan persyaratan.') : null,
         ]);
+        $upload->revisions()->where('is_current', true)->update([
+            'status' => $request->status,
+            'rejection_note' => $request->status === 'rejected' ? ($request->rejection_note ?? 'Dokumen tidak sesuai dengan persyaratan.') : null,
+        ]);
 
         $message = $request->status === 'approved'
             ? 'Dokumen berhasil disetujui.'

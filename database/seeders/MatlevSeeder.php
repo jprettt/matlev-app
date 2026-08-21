@@ -17,7 +17,7 @@ class MatlevSeeder extends Seeder
         ]);
 
         $sub1 = Subkriteria::create([
-            'kriteria_id' => $criteria1->id,
+            'criteria_id' => $criteria1->id,
             'code' => '1.1',
             'title' => 'Menyusun RKAP Bidang K3',
             'pic' => 'Perencanaan dan K3'
@@ -25,7 +25,7 @@ class MatlevSeeder extends Seeder
 
         for ($i = 1; $i <= 5; $i++) {
             MaturityLevel::create([
-                'subkriteria_id' => $sub1->id,
+                'sub_criteria_id' => $sub1->id,
                 'level' => $i,
                 'description' => "Deskripsi Indikator Level $i",
                 'evidence_requirement' => "Bukti PDF Dokumen Level $i"
