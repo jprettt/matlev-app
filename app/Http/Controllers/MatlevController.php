@@ -61,6 +61,7 @@ class MatlevController extends Controller
                             'file_path' => $lvl->evidenceUpload->file_path,
                             'status' => $st,
                             'note' => $lvl->evidenceUpload->rejection_note,
+                            'uploader_id' => $lvl->evidenceUpload->user_id,
                             'uploader' => $lvl->evidenceUpload->user->name ?? 'User',
                             'time' => $lvl->evidenceUpload->uploaded_at ?? $lvl->evidenceUpload->created_at,
                         ];
@@ -74,6 +75,17 @@ class MatlevController extends Controller
             return strtotime($b['time']) <=> strtotime($a['time']);
         });
 
+        $myHistories = array_values(array_filter($allHistories, function ($item) {
+            return (int) ($item['uploader_id'] ?? 0) === (int) Auth::id();
+        }));
+
+        $myStats = [
+            'total' => count($myHistories),
+            'approved' => count(array_filter($myHistories, fn ($item) => ($item['status'] ?? '') === 'approved')),
+            'pending' => count(array_filter($myHistories, fn ($item) => ($item['status'] ?? '') === 'pending')),
+            'rejected' => count(array_filter($myHistories, fn ($item) => ($item['status'] ?? '') === 'rejected')),
+        ];
+
         $globalPercent = $totalSlots > 0 ? round(($totalApproved / $totalSlots) * 100) : 0;
 
         $stats = [
@@ -85,7 +97,7 @@ class MatlevController extends Controller
             'totalUploaded' => $totalApproved + $totalPending + $totalRejected,
         ];
 
-        return compact('criterias', 'stats', 'rejectedItems', 'allHistories');
+        return compact('criterias', 'stats', 'rejectedItems', 'allHistories', 'myHistories', 'myStats');
     }
 
     /**

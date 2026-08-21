@@ -83,12 +83,14 @@
                             <span>Unggah Berkas Pengganti:</span>
                         </div>
 
-                        <form action="{{ route('matlev.upload', $item['upload']->maturity_level_id) }}" method="POST" enctype="multipart/form-data" class="space-y-3">
+                        <form x-data="{ selectedFile: false }" action="{{ route('matlev.upload', $item['upload']->maturity_level_id) }}" method="POST" enctype="multipart/form-data" class="space-y-3">
                             @csrf
-                            <input type="file" name="pdf_file" accept="application/pdf" required 
+                            <input type="file" name="pdf_file" accept="application/pdf" required @change="selectedFile = true"
                                    class="block w-full text-xs text-stone-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-white file:text-stone-800 file:border file:border-stone-300 hover:file:bg-stone-50 cursor-pointer">
                             <button type="submit" 
-                                    class="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 px-4 rounded-full transition shadow-sm flex items-center justify-center gap-2">
+                                    :disabled="!selectedFile"
+                                    :class="selectedFile ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-rose-300 text-rose-100 cursor-not-allowed'"
+                                    class="w-full text-xs font-bold py-2.5 px-4 rounded-full transition shadow-sm flex items-center justify-center gap-2">
                                 <span>Kirim File Revisi</span>
                                 <span>&rarr;</span>
                             </button>

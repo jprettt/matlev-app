@@ -26,6 +26,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+        Route::get('/admin/queue', [AdminController::class, 'queue'])->name('admin.queue');
+        Route::get('/admin/history', [AdminController::class, 'history'])->name('admin.history');
         Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
         Route::post('/admin/users/{id}/role', [AdminController::class, 'updateUserRole'])->name('admin.users.role');
         Route::post('/admin/users/{id}/reset-password', [AdminController::class, 'resetPassword'])->name('admin.users.reset-password');

@@ -133,7 +133,7 @@
 
                                                 @if($st == 'pending')
                                                     <!-- Status: Menunggu Penilaian -->
-                                                    <div class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-xl text-xs space-y-1.5">
+                                                    <div x-data="{ showDetails: false }" class="bg-amber-50 border border-amber-200 text-amber-900 p-2.5 rounded-xl text-xs space-y-1.5">
                                                         <div class="flex items-center gap-1 font-bold text-[11px]">
                                                             <span>⏳</span>
                                                             <span>Menunggu Evaluasi</span>
@@ -141,6 +141,14 @@
                                                         <p class="text-[10px] text-stone-500 truncate" title="{{ $lvl->evidenceUpload->original_filename }}">
                                                             {{ $lvl->evidenceUpload->original_filename }}
                                                         </p>
+                                                        <button type="button" @click="showDetails = !showDetails" class="text-[10px] font-bold text-amber-900 underline decoration-dotted underline-offset-2">
+                                                            <span x-show="!showDetails">Details</span>
+                                                            <span x-show="showDetails">Tutup Details</span>
+                                                        </button>
+                                                        <div x-show="showDetails" x-transition class="text-[10px] text-amber-900 bg-white/80 border border-amber-200 rounded-lg p-2 space-y-0.5">
+                                                            <p><strong>Pengunggah:</strong> {{ $lvl->evidenceUpload->user->name ?? '-' }}</p>
+                                                            <p><strong>Waktu Upload:</strong> {{ $lvl->evidenceUpload->uploaded_at?->format('d M Y H:i') ?? '-' }} WIB</p>
+                                                        </div>
                                                         <div class="flex gap-1 pt-1">
                                                             <a href="{{ asset('storage/' . $lvl->evidenceUpload->file_path) }}" target="_blank" 
                                                                class="flex-1 text-center bg-white border border-amber-300 text-amber-900 hover:bg-amber-100 py-1 rounded text-[10px] font-semibold transition">
@@ -155,7 +163,7 @@
 
                                                 @elseif($st == 'approved')
                                                     <!-- Status: Disetujui -->
-                                                    <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-2.5 rounded-xl text-xs space-y-1.5">
+                                                    <div x-data="{ showDetails: false }" class="bg-emerald-50 border border-emerald-200 text-emerald-900 p-2.5 rounded-xl text-xs space-y-1.5">
                                                         <div class="flex items-center gap-1 font-bold text-[11px]">
                                                             <span>✓</span>
                                                             <span>Disetujui</span>
@@ -163,6 +171,14 @@
                                                         <p class="text-[10px] text-stone-500 truncate" title="{{ $lvl->evidenceUpload->original_filename }}">
                                                             {{ $lvl->evidenceUpload->original_filename }}
                                                         </p>
+                                                        <button type="button" @click="showDetails = !showDetails" class="text-[10px] font-bold text-emerald-900 underline decoration-dotted underline-offset-2">
+                                                            <span x-show="!showDetails">Details</span>
+                                                            <span x-show="showDetails">Tutup Details</span>
+                                                        </button>
+                                                        <div x-show="showDetails" x-transition class="text-[10px] text-emerald-900 bg-white/80 border border-emerald-200 rounded-lg p-2 space-y-0.5">
+                                                            <p><strong>Pengunggah:</strong> {{ $lvl->evidenceUpload->user->name ?? '-' }}</p>
+                                                            <p><strong>Waktu Upload:</strong> {{ $lvl->evidenceUpload->uploaded_at?->format('d M Y H:i') ?? '-' }} WIB</p>
+                                                        </div>
                                                         <div class="flex gap-1 pt-1">
                                                             <a href="{{ asset('storage/' . $lvl->evidenceUpload->file_path) }}" target="_blank" 
                                                                class="flex-1 text-center bg-white border border-emerald-300 text-emerald-900 hover:bg-emerald-100 py-1 rounded text-[10px] font-semibold transition">
@@ -177,7 +193,7 @@
 
                                                 @elseif($st == 'rejected')
                                                     <!-- Status: Ditolak / Perlu Revisi -->
-                                                    <div class="space-y-2">
+                                                    <div x-data="{ showDetails: false, selectedFile: false }" class="space-y-2">
                                                         <div class="bg-rose-50 border border-rose-200 text-rose-900 p-2 rounded-xl text-[11px] space-y-1">
                                                             <div class="flex items-center gap-1 font-bold text-rose-700">
                                                                 <span>✕</span>
@@ -188,13 +204,24 @@
                                                             </p>
                                                         </div>
 
+                                                        <button type="button" @click="showDetails = !showDetails" class="text-[10px] font-bold text-rose-800 underline decoration-dotted underline-offset-2">
+                                                            <span x-show="!showDetails">Details</span>
+                                                            <span x-show="showDetails">Tutup Details</span>
+                                                        </button>
+                                                        <div x-show="showDetails" x-transition class="text-[10px] text-rose-900 bg-white/80 border border-rose-200 rounded-lg p-2 space-y-0.5">
+                                                            <p><strong>Pengunggah:</strong> {{ $lvl->evidenceUpload->user->name ?? '-' }}</p>
+                                                            <p><strong>Waktu Upload:</strong> {{ $lvl->evidenceUpload->uploaded_at?->format('d M Y H:i') ?? '-' }} WIB</p>
+                                                        </div>
+
                                                         <!-- Form Re-upload Revisi (Fungsionalitas Asli) -->
                                                         <form action="{{ route('matlev.upload', $lvl->id) }}" method="POST" enctype="multipart/form-data" class="space-y-1.5">
                                                             @csrf
-                                                            <input type="file" name="pdf_file" accept="application/pdf" required 
+                                                            <input type="file" name="pdf_file" accept="application/pdf" required @change="selectedFile = true"
                                                                    class="block w-full text-[10px] text-stone-500 file:mr-1 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:bg-rose-100 file:text-rose-800 hover:file:bg-rose-200 cursor-pointer">
                                                             <button type="submit" 
-                                                                    class="w-full bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold py-1.5 px-2 rounded-lg transition shadow-xs">
+                                                                    :disabled="!selectedFile"
+                                                                    :class="selectedFile ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-rose-300 text-rose-100 cursor-not-allowed'"
+                                                                    class="w-full text-[10px] font-bold py-1.5 px-2 rounded-lg transition shadow-xs">
                                                                 Upload Revisi
                                                             </button>
                                                         </form>
@@ -203,12 +230,14 @@
 
                                             @else
                                                 <!-- Belum Ada Dokumen / Form Upload Baru (Fungsionalitas Asli) -->
-                                                <form action="{{ route('matlev.upload', $lvl->id) }}" method="POST" enctype="multipart/form-data" class="space-y-2">
+                                                <form x-data="{ selectedFile: false }" action="{{ route('matlev.upload', $lvl->id) }}" method="POST" enctype="multipart/form-data" class="space-y-2">
                                                     @csrf
-                                                    <input type="file" name="pdf_file" accept="application/pdf" required 
+                                                    <input type="file" name="pdf_file" accept="application/pdf" required @change="selectedFile = true"
                                                            class="block w-full text-[10px] text-stone-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:bg-stone-100 file:text-stone-700 hover:file:bg-stone-200 cursor-pointer">
                                                     <button type="submit" 
-                                                            class="w-full bg-fore-900 hover:bg-fore-800 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg transition shadow-xs">
+                                                            :disabled="!selectedFile"
+                                                            :class="selectedFile ? 'bg-fore-900 hover:bg-fore-800 text-white' : 'bg-stone-300 text-stone-100 cursor-not-allowed'"
+                                                            class="w-full text-[11px] font-bold py-1.5 px-3 rounded-lg transition shadow-xs">
                                                         Upload PDF
                                                     </button>
                                                 </form>

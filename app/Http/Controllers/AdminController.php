@@ -7,6 +7,7 @@ use App\Models\Kriteria;
 use App\Models\MaturityLevel;
 use App\Models\Subkriteria;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -14,16 +15,105 @@ class AdminController extends Controller
 {
     public function dashboard(Request $request)
     {
-        $status = $request->get('status', 'all');
+        $pendingCount = EvidenceUpload::where('status', 'pending')->count();
+        $approvedCount = EvidenceUpload::where('status', 'approved')->count();
+        $rejectedCount = EvidenceUpload::where('status', 'rejected')->count();
 
-        $uploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
-            ->when($status !== 'all', fn ($query) => $query->where('status', $status))
-            ->orderByDesc('uploaded_at')
+        $completedUploads = EvidenceUpload::whereIn('status', ['approved', 'rejected'])
+            ->whereNotNull('uploaded_at')
+            ->get(['uploaded_at', 'updated_at']);
+
+        $avgSlaHours = round($completedUploads->avg(function ($upload) {
+            $uploadedAt = $upload->uploaded_at instanceof Carbon ? $upload->uploaded_at : Carbon::parse($upload->uploaded_at);
+            $completedAt = $upload->updated_at instanceof Carbon ? $upload->updated_at : Carbon::parse($upload->updated_at);
+            return max(0, $uploadedAt->diffInMinutes($completedAt) / 60);
+        }) ?? 0, 1);
+
+        $recentPendingUploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
+            ->where('status', 'pending')
+            ->orderBy('uploaded_at')
+            ->limit(8)
             ->get();
 
-        $criteria = Kriteria::with(['subKriterias.maturityLevels'])->get();
+        return view('admin.dashboard', compact(
+            'pendingCount',
+            'approvedCount',
+            'rejectedCount',
+            'avgSlaHours',
+            'recentPendingUploads'
+        ));
+    }
 
-        return view('admin.dashboard', compact('uploads', 'criteria'));
+    public function queue(Request $request)
+    {
+        $units = User::query()
+            ->whereNotNull('unit_kerja')
+            ->where('unit_kerja', '!=', '')
+            ->orderBy('unit_kerja')
+            ->distinct()
+            ->pluck('unit_kerja');
+
+        $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
+
+        $uploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
+            ->where('status', 'pending')
+            ->when($request->filled('unit_kerja'), function ($query) use ($request) {
+                $query->whereHas('user', function ($userQuery) use ($request) {
+                    $userQuery->where('unit_kerja', $request->unit_kerja);
+                });
+            })
+            ->when($request->filled('upload_date'), function ($query) use ($request) {
+                $query->whereDate('uploaded_at', $request->upload_date);
+            })
+            ->when($request->filled('criteria_id'), function ($query) use ($request) {
+                $query->whereHas('maturityLevel.subkriteria', function ($subQuery) use ($request) {
+                    $subQuery->where('criteria_id', $request->criteria_id);
+                });
+            })
+            ->orderBy('uploaded_at')
+            ->paginate(12)
+            ->withQueryString();
+
+        return view('admin.queue', compact('uploads', 'units', 'criteriaOptions'));
+    }
+
+    public function history(Request $request)
+    {
+        $units = User::query()
+            ->whereNotNull('unit_kerja')
+            ->where('unit_kerja', '!=', '')
+            ->orderBy('unit_kerja')
+            ->distinct()
+            ->pluck('unit_kerja');
+
+        $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
+
+        $uploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
+            ->whereIn('status', ['approved', 'rejected'])
+            ->when($request->filled('status'), function ($query) use ($request) {
+                $query->where('status', $request->status);
+            })
+            ->when($request->filled('unit_kerja'), function ($query) use ($request) {
+                $query->whereHas('user', function ($userQuery) use ($request) {
+                    $userQuery->where('unit_kerja', $request->unit_kerja);
+                });
+            })
+            ->when($request->filled('from_date'), function ($query) use ($request) {
+                $query->whereDate('updated_at', '>=', $request->from_date);
+            })
+            ->when($request->filled('to_date'), function ($query) use ($request) {
+                $query->whereDate('updated_at', '<=', $request->to_date);
+            })
+            ->when($request->filled('criteria_id'), function ($query) use ($request) {
+                $query->whereHas('maturityLevel.subkriteria', function ($subQuery) use ($request) {
+                    $subQuery->where('criteria_id', $request->criteria_id);
+                });
+            })
+            ->orderByDesc('updated_at')
+            ->paginate(12)
+            ->withQueryString();
+
+        return view('admin.history', compact('uploads', 'units', 'criteriaOptions'));
     }
 
     public function users()

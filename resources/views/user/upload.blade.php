@@ -61,10 +61,10 @@
                                 </div>
 
                                 <!-- Form Upload -->
-                                <form action="{{ route('user.upload.submit', $sub->id) }}" method="POST" enctype="multipart/form-data" class="flex items-center gap-2">
+                                <form x-data="{ selectedFile: false }" action="{{ route('user.upload.submit', $sub->id) }}" method="POST" enctype="multipart/form-data" class="flex items-center gap-2">
                                     @csrf
-                                    <input type="file" name="document" accept=".pdf" required class="block w-full text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-cyan-900/50 file:text-cyan-300 hover:file:bg-cyan-800/50 cursor-pointer">
-                                    <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1.5 rounded-md text-xs font-semibold shrink-0 transition">
+                                    <input type="file" name="document" accept=".pdf" required @change="selectedFile = true" class="block w-full text-xs text-gray-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-cyan-900/50 file:text-cyan-300 hover:file:bg-cyan-800/50 cursor-pointer">
+                                    <button type="submit" :disabled="!selectedFile" :class="selectedFile ? 'bg-cyan-600 hover:bg-cyan-500 text-white' : 'bg-cyan-900/30 text-cyan-200/60 cursor-not-allowed'" class="px-3 py-1.5 rounded-md text-xs font-semibold shrink-0 transition">
                                         Upload PDF
                                     </button>
                                 </form>

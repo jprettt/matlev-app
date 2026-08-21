@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="space-y-8" x-data="{
+    activeHistoryTab: 'mine',
     statusFilter: 'all',
     matchesFilter(status) {
         if (this.statusFilter === 'all') return true;
@@ -21,32 +22,51 @@
                 Riwayat Aktivitas Pengunggahan
             </h1>
             <p class="text-stone-600 text-xs sm:text-sm leading-relaxed">
-                Rekam jejak seluruh dokumen eviden yang pernah diunggah beserta hasil penilaian tim evaluator K3.
+                Pantau riwayat upload Anda sendiri dan bandingkan dengan riwayat seluruh user dalam satu halaman.
             </p>
         </div>
 
-        <!-- Filter Pill Buttons (Fore Style) -->
-        <div class="flex flex-wrap gap-1.5 bg-cream-100 p-1.5 rounded-full border border-stone-200 text-xs">
+        <div class="space-y-2.5">
+            <div class="flex flex-wrap gap-1.5 bg-stone-100 p-1.5 rounded-full border border-stone-200 text-xs">
+                <button @click="activeHistoryTab = 'mine'; statusFilter = 'all'"
+                        :class="activeHistoryTab === 'mine' ? 'bg-fore-900 text-white font-bold' : 'text-stone-600 hover:text-stone-900'"
+                        class="px-3.5 py-1.5 rounded-full transition-all duration-200">
+                    Riwayat Saya ({{ count($myHistories) }})
+                </button>
+                <button @click="activeHistoryTab = 'all'; statusFilter = 'all'"
+                        :class="activeHistoryTab === 'all' ? 'bg-fore-900 text-white font-bold' : 'text-stone-600 hover:text-stone-900'"
+                        class="px-3.5 py-1.5 rounded-full transition-all duration-200">
+                    Riwayat Semua User ({{ count($allHistories) }})
+                </button>
+            </div>
+
+            <!-- Filter status -->
+            <div class="flex flex-wrap gap-1.5 bg-cream-100 p-1.5 rounded-full border border-stone-200 text-xs">
             <button @click="statusFilter = 'all'" 
                     :class="statusFilter === 'all' ? 'bg-fore-900 text-white font-bold' : 'text-stone-600 hover:text-stone-900'"
                     class="px-3.5 py-1.5 rounded-full transition-all duration-200">
-                Semua ({{ count($allHistories) }})
+                <span x-show="activeHistoryTab === 'mine'">Semua ({{ $myStats['total'] }})</span>
+                <span x-show="activeHistoryTab === 'all'">Semua ({{ count($allHistories) }})</span>
             </button>
             <button @click="statusFilter = 'approved'" 
                     :class="statusFilter === 'approved' ? 'bg-emerald-700 text-white font-bold' : 'text-stone-600 hover:text-emerald-800'"
                     class="px-3.5 py-1.5 rounded-full transition-all duration-200">
-                Disetujui ({{ $stats['totalApproved'] }})
+                <span x-show="activeHistoryTab === 'mine'">Disetujui ({{ $myStats['approved'] }})</span>
+                <span x-show="activeHistoryTab === 'all'">Disetujui ({{ $stats['totalApproved'] }})</span>
             </button>
             <button @click="statusFilter = 'pending'" 
                     :class="statusFilter === 'pending' ? 'bg-amber-600 text-white font-bold' : 'text-stone-600 hover:text-amber-800'"
                     class="px-3.5 py-1.5 rounded-full transition-all duration-200">
-                Menunggu ({{ $stats['totalPending'] }})
+                <span x-show="activeHistoryTab === 'mine'">Menunggu ({{ $myStats['pending'] }})</span>
+                <span x-show="activeHistoryTab === 'all'">Menunggu ({{ $stats['totalPending'] }})</span>
             </button>
             <button @click="statusFilter = 'rejected'" 
                     :class="statusFilter === 'rejected' ? 'bg-rose-600 text-white font-bold' : 'text-stone-600 hover:text-rose-800'"
                     class="px-3.5 py-1.5 rounded-full transition-all duration-200">
-                Ditolak ({{ $stats['totalRejected'] }})
+                <span x-show="activeHistoryTab === 'mine'">Ditolak ({{ $myStats['rejected'] }})</span>
+                <span x-show="activeHistoryTab === 'all'">Ditolak ({{ $stats['totalRejected'] }})</span>
             </button>
+            </div>
         </div>
     </div>
 
@@ -57,6 +77,7 @@
                 <thead class="bg-cream-100/90 text-stone-500 uppercase text-[11px] font-bold tracking-wider border-b border-stone-200">
                     <tr>
                         <th class="p-4 sm:px-6">Waktu Upload</th>
+                        <th class="p-4 sm:px-6">Pengunggah</th>
                         <th class="p-4 sm:px-6">Kriteria & Sub</th>
                         <th class="p-4 sm:px-6">Level</th>
                         <th class="p-4 sm:px-6">Nama Berkas</th>
@@ -66,12 +87,24 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-stone-100">
-                    @forelse($allHistories as $history)
-                        <tr class="hover:bg-cream-100/40 transition-colors" x-show="matchesFilter('{{ $history['status'] }}')">
+                    @php
+                        $combinedHistories = array_merge(
+                            array_map(fn($item) => $item + ['tab_scope' => 'mine'], $myHistories),
+                            array_map(fn($item) => $item + ['tab_scope' => 'all'], $allHistories)
+                        );
+                    @endphp
+                    @foreach($combinedHistories as $history)
+                        <tr class="hover:bg-cream-100/40 transition-colors"
+                            x-show="activeHistoryTab === '{{ $history['tab_scope'] }}' && matchesFilter('{{ $history['status'] }}')">
                             <!-- Waktu Upload -->
                             <td class="p-4 sm:px-6 text-stone-500 text-xs whitespace-nowrap">
                                 <span class="font-bold text-stone-700 block">{{ \Carbon\Carbon::parse($history['time'])->format('d M Y') }}</span>
                                 <span class="text-[11px] text-stone-400">{{ \Carbon\Carbon::parse($history['time'])->format('H:i') }} WIB</span>
+                            </td>
+
+                            <!-- Pengunggah -->
+                            <td class="p-4 sm:px-6 text-xs text-stone-700 whitespace-nowrap">
+                                {{ $history['uploader'] ?? '-' }}
                             </td>
 
                             <!-- Kriteria / Sub -->
@@ -146,13 +179,18 @@
                                 </div>
                             </td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="p-12 text-center text-stone-400 text-sm">
-                                Belum ada berkas eviden yang diunggah ke dalam sistem.
-                            </td>
-                        </tr>
-                    @endforelse
+                    @endforeach
+
+                    <tr x-show="activeHistoryTab === 'mine' && {{ count($myHistories) }} === 0">
+                        <td colspan="8" class="p-12 text-center text-stone-400 text-sm">
+                            Anda belum pernah mengunggah berkas eviden.
+                        </td>
+                    </tr>
+                    <tr x-show="activeHistoryTab === 'all' && {{ count($allHistories) }} === 0">
+                        <td colspan="8" class="p-12 text-center text-stone-400 text-sm">
+                            Belum ada berkas eviden yang diunggah ke dalam sistem.
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>

@@ -1,156 +1,117 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin - Matlev K3</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
-<div class="max-w-7xl mx-auto p-6">
-    <div class="flex items-center justify-between mb-8">
-        <div>
-            <p class="text-xs uppercase tracking-[0.2em] text-cyan-400">Admin Master Data & Evaluator</p>
-            <h1 class="text-3xl font-bold mt-2">Dashboard Verifikasi Dokumen</h1>
-        </div>
-        <form action="{{ route('logout') }}" method="POST">
-            @csrf
-            <button type="submit" class="bg-rose-600 hover:bg-rose-500 px-4 py-2 rounded-lg font-semibold">Logout</button>
-        </form>
+@extends('layouts.admin')
+
+@section('title', 'Dashboard Verifikator')
+
+@section('content')
+@php
+    $total = $pendingCount + $approvedCount + $rejectedCount;
+    $pendingPct = $total > 0 ? round(($pendingCount / $total) * 100, 2) : 0;
+    $approvedPct = $total > 0 ? round(($approvedCount / $total) * 100, 2) : 0;
+    $rejectedPct = $total > 0 ? round(($rejectedCount / $total) * 100, 2) : 0;
+    $donutStyle = "background: conic-gradient(#facc15 0% {$pendingPct}%, #22c55e {$pendingPct}% " . ($pendingPct + $approvedPct) . "%, #ef4444 " . ($pendingPct + $approvedPct) . "% 100%);";
+@endphp
+
+<div class="space-y-6">
+    <div class="bg-white border border-stone-200 rounded-3xl p-6 sm:p-7 shadow-sm">
+        <p class="text-xs uppercase tracking-[0.2em] text-pln-700 font-bold">Admin Master Data & Evaluator</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold font-display text-stone-900 mt-2">Dashboard Verifikasi Dokumen</h1>
+        <p class="text-sm text-stone-500 mt-2">Pantau beban kerja harian verifikator dan dokumen yang butuh tindak lanjut prioritas.</p>
     </div>
 
     @if(session('success'))
-        <div class="bg-emerald-900/50 border border-emerald-500 text-emerald-200 px-4 py-3 rounded-xl mb-6">
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl text-sm font-medium">
             {{ session('success') }}
         </div>
     @endif
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5">
-            <p class="text-sm text-slate-400">Total Upload</p>
-            <p class="text-3xl font-bold mt-2">{{ $uploads->count() }}</p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <p class="text-xs text-amber-800 font-bold uppercase tracking-wide">Menunggu Verifikasi</p>
+            <p class="text-3xl font-extrabold text-amber-900 mt-2">{{ $pendingCount }}</p>
         </div>
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5">
-            <p class="text-sm text-slate-400">Pending</p>
-            <p class="text-3xl font-bold mt-2 text-amber-400">{{ $uploads->where('status', 'pending')->count() }}</p>
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+            <p class="text-xs text-emerald-800 font-bold uppercase tracking-wide">Disetujui</p>
+            <p class="text-3xl font-extrabold text-emerald-900 mt-2">{{ $approvedCount }}</p>
         </div>
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5">
-            <p class="text-sm text-slate-400">Approved</p>
-            <p class="text-3xl font-bold mt-2 text-emerald-400">{{ $uploads->where('status', 'approved')->count() }}</p>
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+            <p class="text-xs text-rose-800 font-bold uppercase tracking-wide">Ditolak / Revisi</p>
+            <p class="text-3xl font-extrabold text-rose-900 mt-2">{{ $rejectedCount }}</p>
         </div>
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5">
-            <p class="text-sm text-slate-400">Rejected</p>
-            <p class="text-3xl font-bold mt-2 text-rose-400">{{ $uploads->where('status', 'rejected')->count() }}</p>
+        <div class="rounded-2xl border border-blue-200 bg-blue-50 p-5">
+            <p class="text-xs text-blue-800 font-bold uppercase tracking-wide">Rata-Rata SLA</p>
+            <p class="text-3xl font-extrabold text-blue-900 mt-2">{{ $avgSlaHours }} jam</p>
         </div>
     </div>
 
-    <div class="space-y-8">
-        <section class="bg-slate-900 rounded-2xl p-5 border border-slate-700">
-            <div class="flex items-center justify-between mb-5">
-                <h2 class="text-xl font-semibold">Filter Antrean Evaluasi</h2>
-                <div class="flex gap-2">
-                    @php $statusFilter = request('status', 'all'); @endphp
-                    <a href="{{ route('admin.dashboard', ['status' => 'all']) }}" class="px-3 py-1.5 rounded {{ $statusFilter === 'all' ? 'bg-cyan-600' : 'bg-slate-800' }} text-sm">Semua</a>
-                    <a href="{{ route('admin.dashboard', ['status' => 'pending']) }}" class="px-3 py-1.5 rounded {{ $statusFilter === 'pending' ? 'bg-cyan-600' : 'bg-slate-800' }} text-sm">Pending</a>
-                    <a href="{{ route('admin.dashboard', ['status' => 'approved']) }}" class="px-3 py-1.5 rounded {{ $statusFilter === 'approved' ? 'bg-cyan-600' : 'bg-slate-800' }} text-sm">Approved</a>
-                    <a href="{{ route('admin.dashboard', ['status' => 'rejected']) }}" class="px-3 py-1.5 rounded {{ $statusFilter === 'rejected' ? 'bg-cyan-600' : 'bg-slate-800' }} text-sm">Rejected</a>
-                </div>
-            </div>
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+        <section class="bg-white border border-stone-200 rounded-3xl p-6 shadow-sm xl:col-span-1">
+            <h2 class="text-lg font-extrabold font-display text-stone-900">Grafik Ringkasan Evaluasi</h2>
+            <p class="text-xs text-stone-500 mt-1">Perbandingan dokumen pending, disetujui, dan ditolak.</p>
 
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-slate-800 text-slate-300 uppercase text-[11px] tracking-wide">
-                    <tr>
-                        <th class="px-4 py-3 text-left">Kriteria / Sub</th>
-                        <th class="px-4 py-3 text-left">User</th>
-                        <th class="px-4 py-3 text-left">Berkas</th>
-                        <th class="px-4 py-3 text-left">Status</th>
-                        <th class="px-4 py-3 text-left">Catatan</th>
-                        <th class="px-4 py-3 text-left">Aksi</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @forelse($uploads as $upload)
-                        <tr class="border-t border-slate-700 align-top">
-                            <td class="px-4 py-3">
-                                <div class="font-semibold text-white">{{ $upload->maturityLevel->subkriteria->kriteria->title ?? '-' }}</div>
-                                <div class="text-cyan-400 text-xs">{{ $upload->maturityLevel->subkriteria->title ?? '-' }} • Level {{ $upload->maturityLevel->level ?? '-' }}</div>
-                            </td>
-                            <td class="px-4 py-3">
-                                <div>{{ $upload->user->name ?? '-' }}</div>
-                                <div class="text-xs text-slate-400">{{ $upload->user->unit_kerja ?? '-' }}</div>
-                            </td>
-                            <td class="px-4 py-3">
-                                <a href="{{ asset('storage/' . $upload->file_path) }}" target="_blank" class="text-cyan-400 underline">{{ $upload->original_filename }}</a>
-                            </td>
-                            <td class="px-4 py-3">
-                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold
-                                    @if($upload->status === 'approved') bg-emerald-900 text-emerald-300
-                                    @elseif($upload->status === 'rejected') bg-rose-900 text-rose-300
-                                    @else bg-amber-900 text-amber-300 @endif">
-                                    {{ ucfirst($upload->status ?? 'pending') }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-xs text-slate-300 max-w-xs">
-                                {{ $upload->rejection_note ?: 'Belum ada catatan.' }}
-                            </td>
-                            <td class="px-4 py-3">
-                                <form action="{{ route('admin.verify', $upload->id) }}" method="POST" class="space-y-2">
-                                    @csrf
-                                    <select name="status" class="bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-sm text-white">
-                                        <option value="pending" {{ $upload->status === 'pending' ? 'selected' : '' }}>Pending</option>
-                                        <option value="approved" {{ $upload->status === 'approved' ? 'selected' : '' }}>Approve</option>
-                                        <option value="rejected" {{ $upload->status === 'rejected' ? 'selected' : '' }}>Reject</option>
-                                    </select>
-                                    <textarea name="rejection_note" rows="2" placeholder="Catatan alasan bila ditolak" class="w-full bg-slate-800 border border-slate-600 rounded px-2 py-1.5 text-sm text-white"></textarea>
-                                    <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 px-3 py-2 rounded font-semibold text-sm">Simpan</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-4 py-8 text-center text-slate-400">Belum ada data unggahan.</td>
-                        </tr>
-                    @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <section class="bg-slate-900 rounded-2xl p-5 border border-slate-700">
-            <h2 class="text-xl font-semibold mb-5">Manajemen Data Master Kriteria</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div>
-                    <h3 class="font-semibold mb-3 text-cyan-400">Tambah Kriteria</h3>
-                    <form action="{{ route('admin.criteria.store') }}" method="POST" class="space-y-3">
-                        @csrf
-                        <input type="text" name="code" placeholder="Kode (contoh: 1)" class="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2" required>
-                        <input type="text" name="title" placeholder="Judul kriteria" class="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2" required>
-                        <button type="submit" class="bg-cyan-600 hover:bg-cyan-500 px-4 py-2 rounded font-semibold">Simpan Kriteria</button>
-                    </form>
+            <div class="mt-6 flex flex-col items-center gap-5">
+                <div class="w-52 h-52 rounded-full relative" style="{{ $donutStyle }}">
+                    <div class="absolute inset-8 bg-white rounded-full border border-stone-100 flex flex-col items-center justify-center">
+                        <p class="text-[11px] text-stone-500">Total Dokumen</p>
+                        <p class="text-3xl font-extrabold text-stone-900">{{ $total }}</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="font-semibold mb-3 text-cyan-400">Daftar Kriteria</h3>
-                    <div class="space-y-3">
-                        @foreach($criteria as $item)
-                            <div class="bg-slate-800 rounded-xl p-3">
-                                <div class="flex items-center justify-between gap-4">
-                                    <div>
-                                        <div class="font-semibold">{{ $item->code }} - {{ $item->title }}</div>
-                                    </div>
-                                    <form action="{{ route('admin.criteria.delete', $item->id) }}" method="POST" onsubmit="return confirm('Hapus kriteria ini?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-rose-400 text-sm">Hapus</button>
-                                    </form>
-                                </div>
-                            </div>
-                        @endforeach
+
+                <div class="w-full space-y-2 text-sm">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-amber-400"></span><span>Pending</span></div>
+                        <span class="font-bold">{{ $pendingCount }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-500"></span><span>Approved</span></div>
+                        <span class="font-bold">{{ $approvedCount }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-rose-500"></span><span>Rejected</span></div>
+                        <span class="font-bold">{{ $rejectedCount }}</span>
                     </div>
                 </div>
             </div>
         </section>
+
+        <section class="bg-white border border-stone-200 rounded-3xl p-6 shadow-sm xl:col-span-2">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <div>
+                    <h2 class="text-lg font-extrabold font-display text-stone-900">Antrean Prioritas</h2>
+                    <p class="text-xs text-stone-500">Daftar berkas pending paling lama untuk diproses terlebih dahulu.</p>
+                </div>
+                <a href="{{ route('admin.queue') }}" class="px-3 py-2 text-xs font-bold rounded-lg bg-pln-700 text-white hover:bg-pln-800 transition">Buka Antrean Verifikasi</a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-stone-100 text-stone-600 text-[11px] uppercase tracking-wider">
+                        <tr>
+                            <th class="px-4 py-3 text-left">Tanggal Upload</th>
+                            <th class="px-4 py-3 text-left">Pengunggah</th>
+                            <th class="px-4 py-3 text-left">Kriteria</th>
+                            <th class="px-4 py-3 text-left">Berkas</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-100">
+                        @forelse($recentPendingUploads as $upload)
+                            <tr>
+                                <td class="px-4 py-3 text-xs text-stone-500 whitespace-nowrap">{{ $upload->uploaded_at?->format('d M Y H:i') ?? '-' }}</td>
+                                <td class="px-4 py-3 text-sm font-semibold text-stone-800">{{ $upload->user->name ?? '-' }}</td>
+                                <td class="px-4 py-3 text-xs text-stone-600">
+                                    <div class="font-semibold text-stone-800">{{ $upload->maturityLevel->subkriteria->kriteria->title ?? '-' }}</div>
+                                    <div>{{ $upload->maturityLevel->subkriteria->title ?? '-' }} • Level {{ $upload->maturityLevel->level ?? '-' }}</div>
+                                </td>
+                                <td class="px-4 py-3 text-xs"><a href="{{ asset('storage/' . $upload->file_path) }}" target="_blank" class="text-pln-700 hover:text-pln-900 underline">{{ $upload->original_filename }}</a></td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" class="px-4 py-8 text-center text-stone-400">Tidak ada dokumen pending saat ini.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 </div>
-</body>
-</html>
+@endsection
