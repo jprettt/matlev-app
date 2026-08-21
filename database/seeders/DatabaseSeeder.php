@@ -11,12 +11,14 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Hapus kriteria lama jika ada
         Kriteria::whereIn('title', [
             'Komitmen & Kebijakan K3',
             'Perencanaan & Identifikasi Risiko',
         ])->delete();
 
-        $admin = User::updateOrCreate([
+        // Seed Users
+        User::updateOrCreate([
             'email' => 'admin@matlev.test',
         ], [
             'name' => 'Admin Master Data',
@@ -41,6 +43,11 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('password123'),
             'role' => 'atasan',
             'unit_kerja' => 'UP2D Suluttenggo',
+        ]);
+
+        // Panggil MatlevSeeder di sini
+        $this->call([
+            MatlevSeeder::class,
         ]);
     }
 }

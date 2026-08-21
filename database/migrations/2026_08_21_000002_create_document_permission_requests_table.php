@@ -18,7 +18,8 @@ return new class extends Migration {
             $table->timestamp('used_at')->nullable();
             $table->timestamps();
 
-            $table->index(['evidence_upload_id', 'requester_id', 'action', 'status']);
+            // INI YANG DIUBAH: Ditambahin 'doc_perm_req_idx' di belakangnya
+            $table->index(['evidence_upload_id', 'requester_id', 'action', 'status'], 'doc_perm_req_idx');
         });
     }
 
