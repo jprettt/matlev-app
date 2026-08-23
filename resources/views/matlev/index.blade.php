@@ -91,6 +91,9 @@
                     }
                 }
             }
+            usort($allHistories, function ($a, $b) {
+                return \Carbon\Carbon::parse($b['time'])->timestamp <=> \Carbon\Carbon::parse($a['time'])->timestamp;
+            });
             $globalPercent = $totalSlots > 0 ? round(($totalApproved / $totalSlots) * 100) : 0;
         @endphp
 

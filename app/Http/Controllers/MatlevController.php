@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class MatlevController extends Controller
 {
@@ -105,7 +106,7 @@ class MatlevController extends Controller
 
         // Urutkan riwayat dari yang terbaru
         usort($allHistories, function ($a, $b) {
-            return strtotime($b['time']) <=> strtotime($a['time']);
+            return Carbon::parse($b['time'])->timestamp <=> Carbon::parse($a['time'])->timestamp;
         });
 
         $myHistories = array_values(array_filter($allHistories, function ($item) {
