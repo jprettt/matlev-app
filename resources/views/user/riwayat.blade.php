@@ -3,7 +3,7 @@
 @section('title', 'Riwayat Aktivitas')
 
 @section('content')
-<div class="space-y-8" x-data="{ activityFilter: 'all' }">
+<div class="space-y-8" x-data="{ activityFilter: 'all', actorFilter: 'all' }">
     <div class="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm">
         <div class="space-y-1 mb-6">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-100 text-stone-800 text-xs font-bold">
@@ -13,17 +13,32 @@
             <p class="text-stone-600 text-xs sm:text-sm">Pantau seluruh aktivitas upload, izin, dan penilaian dokumen.</p>
         </div>
 
-        <div class="flex flex-wrap gap-1.5 bg-stone-100 p-1.5 rounded-2xl border border-stone-200 text-xs">
+        <div class="inline-flex flex-wrap gap-1.5 bg-stone-100 p-1.5 rounded-2xl border border-stone-200 text-xs w-fit max-w-full">
             @foreach([
-                'all' => 'Semua',
+                'all' => 'Semua Aktivitas',
                 'upload' => 'Upload',
                 'revision_upload' => 'Upload File Revisi',
                 'permission_request' => 'Minta Izin',
                 'permission_granted' => 'Mengizinkan',
                 'evaluation' => 'Menilai',
+                'delete' => 'Menghapus',
             ] as $type => $label)
                 <button type="button" @click="activityFilter = '{{ $type }}'"
                         :class="activityFilter === '{{ $type }}' ? 'bg-pln-900 text-white font-bold' : 'text-stone-700 hover:bg-white hover:text-stone-900'"
+                        class="px-3.5 py-2 rounded-xl transition-all duration-200">
+                    {{ $label }}
+                </button>
+            @endforeach
+        </div>
+
+        <div class="mt-3 inline-flex flex-wrap gap-1.5 bg-stone-100 p-1.5 rounded-2xl border border-stone-200 text-xs w-fit max-w-full">
+            @foreach([
+                'all' => 'Semua Aktor',
+                'mine' => 'Saya',
+                'team' => 'Tim',
+            ] as $actorType => $label)
+                <button type="button" @click="actorFilter = '{{ $actorType }}'"
+                        :class="actorFilter === '{{ $actorType }}' ? 'bg-emerald-700 text-white font-bold' : 'text-stone-700 hover:bg-white hover:text-stone-900'"
                         class="px-3.5 py-2 rounded-xl transition-all duration-200">
                     {{ $label }}
                 </button>
@@ -62,10 +77,13 @@
                             $typeForFilter = in_array($log->activity_type, ['permission_request', 'permission_rejected'], true)
                                 ? 'permission_request'
                                 : $log->activity_type;
+                            $actorForFilter = (int) $log->actor_id === (int) Auth::id()
+                                ? 'mine'
+                                : (($log->actor->role ?? null) === 'user' ? 'team' : 'admin');
                             $detailUrl = route('user.kriteria', ['level' => $log->maturity_level_id]) . '#level-' . $log->maturity_level_id;
                         @endphp
                         <tr @click="window.location.href = '{{ $detailUrl }}'"
-                            x-show="activityFilter === 'all' || activityFilter === '{{ $typeForFilter }}'"
+                            x-show="(activityFilter === 'all' || activityFilter === '{{ $typeForFilter }}') && (actorFilter === 'all' || actorFilter === '{{ $actorForFilter }}' || (actorFilter === 'team' && '{{ $actorForFilter }}' === 'mine'))"
                             class="cursor-pointer hover:bg-blue-50/60 transition-colors focus-within:bg-blue-50/60"
                             tabindex="0"
                             @keydown.enter="window.location.href = '{{ $detailUrl }}'">

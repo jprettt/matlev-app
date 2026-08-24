@@ -68,7 +68,12 @@ class RoleAccessTest extends TestCase
         $this->actingAs($owner)
             ->get(route('user.history'))
             ->assertOk()
-            ->assertSee('Verifikator menyetujui file original.pdf');
+            ->assertSee('Verifikator menyetujui file original.pdf')
+            ->assertSee('Menghapus')
+            ->assertSee('Saya')
+            ->assertSee('Tim')
+            ->assertSee('Semua Aktor')
+            ->assertSee('Semua Aktivitas');
     }
 
     public function test_other_user_cannot_delete_until_owner_approves(): void
