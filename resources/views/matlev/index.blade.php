@@ -364,7 +364,7 @@
                             @forelse($allHistories as $history)
                                 <tr class="hover:bg-slate-950/40">
                                     <td class="p-3 text-slate-400 whitespace-nowrap">
-                                        {{ \Carbon\Carbon::parse($history['time'])->format('d M Y, H:i') }}
+                                        {{ \Carbon\Carbon::parse($history['time'])->timezone(config('app.timezone'))->format('d M Y, H:i') }} WITA
                                     </td>
                                     <td class="p-3 font-medium text-white">
                                         [{{ $history['criteria_code'] }} - {{ $history['sub_code'] }}]

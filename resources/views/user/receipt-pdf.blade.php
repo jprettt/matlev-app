@@ -35,7 +35,7 @@
                     <td class="border px-3 py-2">{{ $upload->maturityLevel->subkriteria->title ?? '-' }}</td>
                     <td class="border px-3 py-2">{{ $upload->maturityLevel->level ?? '-' }}</td>
                     <td class="border px-3 py-2">{{ ucfirst($upload->status ?? 'pending') }}</td>
-                    <td class="border px-3 py-2">{{ $upload->uploaded_at?->format('d-m-Y H:i') ?? '-' }}</td>
+                    <td class="border px-3 py-2">{{ $upload->uploaded_at ? $upload->uploaded_at->timezone(config('app.timezone'))->format('d-m-Y H:i') . ' WITA' : '-' }}</td>
                 </tr>
             @endforeach
             </tbody>

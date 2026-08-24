@@ -152,7 +152,7 @@
                                                         </button>
                                                         <div x-show="showDetails" x-transition class="text-[10px] text-amber-900 bg-white/80 border border-amber-200 rounded-lg p-2 space-y-0.5">
                                                             <p><strong>Pengunggah:</strong> {{ $lvl->evidenceUpload->user->name ?? '-' }}</p>
-                                                            <p><strong>Waktu Upload:</strong> {{ $lvl->evidenceUpload->uploaded_at?->format('d M Y H:i') ?? '-' }} WIB</p>
+                                                            <p><strong>Waktu Upload:</strong> {{ $lvl->evidenceUpload->uploaded_at ? $lvl->evidenceUpload->uploaded_at->timezone(config('app.timezone'))->format('d M Y H:i') . ' WITA' : '-' }}</p>
                                                         </div>
                                                         <div class="flex gap-1 pt-1">
                                                             <a href="{{ asset('storage/' . $lvl->evidenceUpload->file_path) }}" target="_blank" 
@@ -193,7 +193,7 @@
                                                         </button>
                                                         <div x-show="showDetails" x-transition class="text-[10px] text-emerald-900 bg-white/80 border border-emerald-200 rounded-lg p-2 space-y-0.5">
                                                             <p><strong>Pengunggah:</strong> {{ $lvl->evidenceUpload->user->name ?? '-' }}</p>
-                                                            <p><strong>Waktu Upload:</strong> {{ $lvl->evidenceUpload->uploaded_at?->format('d M Y H:i') ?? '-' }} WIB</p>
+                                                            <p><strong>Waktu Upload:</strong> {{ $lvl->evidenceUpload->uploaded_at ? $lvl->evidenceUpload->uploaded_at->timezone(config('app.timezone'))->format('d M Y H:i') . ' WITA' : '-' }}</p>
                                                         </div>
                                                         <div class="flex gap-1 pt-1">
                                                             <a href="{{ asset('storage/' . $lvl->evidenceUpload->file_path) }}" target="_blank" 
@@ -226,7 +226,7 @@
                                                         </button>
                                                         <div x-show="showDetails" x-transition class="text-[10px] text-rose-900 bg-white/80 border border-rose-200 rounded-lg p-2 space-y-0.5">
                                                             <p><strong>Pengunggah:</strong> {{ $lvl->evidenceUpload->user->name ?? '-' }}</p>
-                                                            <p><strong>Waktu Upload:</strong> {{ $lvl->evidenceUpload->uploaded_at?->format('d M Y H:i') ?? '-' }} WIB</p>
+                                                            <p><strong>Waktu Upload:</strong> {{ $lvl->evidenceUpload->uploaded_at ? $lvl->evidenceUpload->uploaded_at->timezone(config('app.timezone'))->format('d M Y H:i') . ' WITA' : '-' }}</p>
                                                         </div>
 
                                                         @if($canUpload)

@@ -75,7 +75,7 @@ class AtasanController extends Controller
                 $upload->maturityLevel->level ?? '-',
                 ucfirst($upload->status ?? 'pending'),
                 $upload->rejection_note ?? '-',
-                $upload->uploaded_at?->format('d-m-Y H:i') ?? '-',
+                $upload->uploaded_at ? $upload->uploaded_at->timezone(config('app.timezone'))->format('d-m-Y H:i') . ' WITA' : '-',
             ];
         }
 

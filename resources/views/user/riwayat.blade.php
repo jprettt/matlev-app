@@ -98,8 +98,8 @@
                             x-show="activeHistoryTab === '{{ $history['tab_scope'] }}' && matchesFilter('{{ $history['status'] }}')">
                             <!-- Waktu Upload -->
                             <td class="p-4 sm:px-6 text-stone-500 text-xs whitespace-nowrap">
-                                <span class="font-bold text-stone-700 block">{{ \Carbon\Carbon::parse($history['time'])->format('d M Y') }}</span>
-                                <span class="text-[11px] text-stone-400">{{ \Carbon\Carbon::parse($history['time'])->format('H:i') }} WIB</span>
+                                <span class="font-bold text-stone-700 block">{{ \Carbon\Carbon::parse($history['time'])->timezone(config('app.timezone'))->format('d M Y') }}</span>
+                                <span class="text-[11px] text-stone-400">{{ \Carbon\Carbon::parse($history['time'])->timezone(config('app.timezone'))->format('H:i') }} WITA</span>
                             </td>
 
                             <!-- Pengunggah -->
@@ -163,7 +163,7 @@
                             <td class="p-4 sm:px-6 text-xs text-stone-500 max-w-xs">
                                 @if($history['status'] == 'deleted')
                                     <span class="text-rose-800 bg-rose-50/70 p-1.5 rounded-lg border border-rose-100 block">
-                                        File dihapus{{ $history['deleted_by'] ? ' oleh ' . $history['deleted_by'] : '' }}{{ $history['deleted_at'] ? ' pada ' . \Carbon\Carbon::parse($history['deleted_at'])->format('d M Y H:i') : '' }}.
+                                        File dihapus{{ $history['deleted_by'] ? ' oleh ' . $history['deleted_by'] : '' }}{{ $history['deleted_at'] ? ' pada ' . \Carbon\Carbon::parse($history['deleted_at'])->timezone(config('app.timezone'))->format('d M Y H:i') . ' WITA' : '' }}.
                                     </span>
                                 @elseif($history['note'])
                                     <span class="text-rose-800 italic bg-rose-50/70 p-1.5 rounded-lg border border-rose-100 block">

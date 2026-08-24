@@ -66,7 +66,7 @@
                 <tbody class="divide-y divide-stone-100">
                     @forelse($uploads as $upload)
                         <tr class="align-top">
-                            <td class="px-4 py-3 text-xs text-stone-500 whitespace-nowrap">{{ $upload->uploaded_at?->format('d M Y H:i') ?? '-' }}</td>
+                            <td class="px-4 py-3 text-xs text-stone-500 whitespace-nowrap">{{ $upload->uploaded_at ? $upload->uploaded_at->timezone(config('app.timezone'))->format('d M Y H:i') . ' WITA' : '-' }}</td>
                             <td class="px-4 py-3">
                                 <div class="font-semibold text-stone-800">{{ $upload->user->name ?? '-' }}</div>
                             </td>

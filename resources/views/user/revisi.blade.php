@@ -86,9 +86,9 @@
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px]">
                                         <div>
                                             <span class="font-bold text-stone-700">Versi {{ $revision->version_number }}: {{ $revision->original_filename }}</span>
-                                            <span class="text-stone-400">oleh {{ $revision->user->name ?? '-' }} pada {{ $revision->uploaded_at?->format('d M Y H:i') ?? '-' }}</span>
+                                            <span class="text-stone-400">oleh {{ $revision->user->name ?? '-' }} pada {{ $revision->uploaded_at ? $revision->uploaded_at->timezone(config('app.timezone'))->format('d M Y H:i') . ' WITA' : '-' }}</span>
                                             @if($revision->status === 'deleted')
-                                                <p class="text-rose-700 font-semibold">File dihapus oleh {{ $revision->deletedBy->name ?? '-' }} pada {{ $revision->deleted_at?->format('d M Y H:i') ?? '-' }}.</p>
+                                                <p class="text-rose-700 font-semibold">File dihapus oleh {{ $revision->deletedBy->name ?? '-' }} pada {{ $revision->deleted_at ? $revision->deleted_at->timezone(config('app.timezone'))->format('d M Y H:i') . ' WITA' : '-' }}.</p>
                                             @endif
                                         </div>
                                         @if($revision->status !== 'deleted' && !($revision->is_current && $item['upload']->status === 'rejected'))
