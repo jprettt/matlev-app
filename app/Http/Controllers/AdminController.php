@@ -48,22 +48,10 @@ class AdminController extends Controller
 
     public function queue(Request $request)
     {
-        $units = User::query()
-            ->whereNotNull('unit_kerja')
-            ->where('unit_kerja', '!=', '')
-            ->orderBy('unit_kerja')
-            ->distinct()
-            ->pluck('unit_kerja');
-
         $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
 
         $uploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
             ->where('status', 'pending')
-            ->when($request->filled('unit_kerja'), function ($query) use ($request) {
-                $query->whereHas('user', function ($userQuery) use ($request) {
-                    $userQuery->where('unit_kerja', $request->unit_kerja);
-                });
-            })
             ->when($request->filled('upload_date'), function ($query) use ($request) {
                 $query->whereDate('uploaded_at', $request->upload_date);
             })
@@ -76,29 +64,17 @@ class AdminController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('admin.queue', compact('uploads', 'units', 'criteriaOptions'));
+        return view('admin.queue', compact('uploads', 'criteriaOptions'));
     }
 
     public function history(Request $request)
     {
-        $units = User::query()
-            ->whereNotNull('unit_kerja')
-            ->where('unit_kerja', '!=', '')
-            ->orderBy('unit_kerja')
-            ->distinct()
-            ->pluck('unit_kerja');
-
         $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
 
         $uploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
             ->whereIn('status', ['approved', 'rejected'])
             ->when($request->filled('status'), function ($query) use ($request) {
                 $query->where('status', $request->status);
-            })
-            ->when($request->filled('unit_kerja'), function ($query) use ($request) {
-                $query->whereHas('user', function ($userQuery) use ($request) {
-                    $userQuery->where('unit_kerja', $request->unit_kerja);
-                });
             })
             ->when($request->filled('from_date'), function ($query) use ($request) {
                 $query->whereDate('updated_at', '>=', $request->from_date);
@@ -115,7 +91,7 @@ class AdminController extends Controller
             ->paginate(12)
             ->withQueryString();
 
-        return view('admin.history', compact('uploads', 'units', 'criteriaOptions'));
+        return view('admin.history', compact('uploads', 'criteriaOptions'));
     }
 
     public function users()
@@ -155,7 +131,7 @@ class AdminController extends Controller
     {
         $request->validate([
             'status' => 'required|in:pending,approved,rejected',
-            'rejection_note' => 'nullable|string|max:1000',
+            'rejection_note' => 'required_if:status,rejected|nullable|string|max:1000',
         ]);
 
         $upload = EvidenceUpload::findOrFail($id);

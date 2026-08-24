@@ -4,29 +4,20 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="bg-white border border-stone-200 rounded-3xl p-6 shadow-sm">
-        <h1 class="text-2xl font-extrabold font-display text-stone-900">Riwayat Evaluasi</h1>
+    <div class="bg-gradient-to-r from-rose-700 via-pln-800 to-pln-900 rounded-3xl p-6 sm:p-7 shadow-lg shadow-pln-900/15 text-white">
+        <p class="text-xs uppercase tracking-[0.2em] text-rose-200 font-bold">Audit Keputusan</p>
+        <h1 class="text-2xl font-extrabold font-display mt-2">Riwayat Evaluasi</h1>
         <p class="text-sm text-stone-500 mt-1">Audit trail keputusan verifikator untuk dokumen approved dan rejected.</p>
     </div>
 
     <section class="bg-white border border-stone-200 rounded-3xl p-5 shadow-sm">
-        <form method="GET" action="{{ route('admin.history') }}" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+        <form method="GET" action="{{ route('admin.history') }}" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
             <div>
                 <label class="text-xs font-bold text-stone-600 uppercase">Status</label>
                 <select name="status" class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm bg-white">
                     <option value="">Semua</option>
                     <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>Approved</option>
                     <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="text-xs font-bold text-stone-600 uppercase">Unit Kerja</label>
-                <select name="unit_kerja" class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm bg-white">
-                    <option value="">Semua Unit</option>
-                    @foreach($units as $unit)
-                        <option value="{{ $unit }}" {{ request('unit_kerja') === $unit ? 'selected' : '' }}>{{ $unit }}</option>
-                    @endforeach
                 </select>
             </div>
 
@@ -52,7 +43,7 @@
                 </select>
             </div>
 
-            <div class="md:col-span-5 flex gap-2 justify-end">
+            <div class="md:col-span-4 flex gap-2 justify-end">
                 <button type="submit" class="px-5 rounded-xl bg-pln-700 hover:bg-pln-800 text-white text-sm font-bold py-2.5">Terapkan</button>
                 <a href="{{ route('admin.history') }}" class="px-5 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 text-sm font-bold py-2.5">Reset</a>
             </div>

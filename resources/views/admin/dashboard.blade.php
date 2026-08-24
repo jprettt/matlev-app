@@ -12,10 +12,12 @@
 @endphp
 
 <div class="space-y-6">
-    <div class="bg-white border border-stone-200 rounded-3xl p-6 sm:p-7 shadow-sm">
-        <p class="text-xs uppercase tracking-[0.2em] text-pln-700 font-bold">Admin Master Data & Evaluator</p>
-        <h1 class="text-2xl sm:text-3xl font-extrabold font-display text-stone-900 mt-2">Dashboard Verifikasi Dokumen</h1>
-        <p class="text-sm text-stone-500 mt-2">Pantau beban kerja harian verifikator dan dokumen yang butuh tindak lanjut prioritas.</p>
+    <div class="relative overflow-hidden bg-gradient-to-r from-pln-950 via-pln-800 to-cyan-700 rounded-3xl p-6 sm:p-8 shadow-xl shadow-pln-900/20 text-white">
+        <div class="relative z-10">
+            <p class="text-xs uppercase tracking-[0.2em] text-cyan-200 font-bold">Admin Master Data & Evaluator</p>
+            <h1 class="text-2xl sm:text-3xl font-extrabold font-display mt-2">Dashboard Verifikasi Dokumen</h1>
+            <p class="text-sm text-blue-100 mt-2">Pantau beban kerja harian verifikator dan dokumen yang butuh tindak lanjut prioritas.</p>
+        </div>
     </div>
 
     @if(session('success'))

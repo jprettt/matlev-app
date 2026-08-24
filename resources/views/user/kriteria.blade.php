@@ -3,15 +3,15 @@
 @section('title', 'Daftar Kriteria & Upload Bukti')
 
 @section('content')
-<div class="space-y-8" x-data="{ searchQuery: '' }">
+<div class="space-y-8 pb-8" x-data="{ searchQuery: '' }">
 
     <!-- PAGE HEADER (FORE STYLE) -->
-    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="w-full max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 px-6 sm:px-10 lg:px-12 pt-10 sm:pt-14 pb-6 text-stone-900">
         <div class="space-y-1 max-w-2xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-fore-100 text-fore-900 text-xs font-bold">
-                <span>📁 FORM PENGISIAN EVIDEN</span>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pln-50 text-pln-800 text-xs font-bold border border-pln-200">
+                <span>FORM PENGISIAN EVIDEN</span>
             </div>
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-stone-900 font-display">
+            <h1 class="text-2xl sm:text-3xl font-extrabold font-display mt-2">
                 Daftar Kriteria & Upload Dokumen
             </h1>
             <p class="text-stone-600 text-xs sm:text-sm leading-relaxed">
@@ -53,22 +53,22 @@
                 $criteriaFilterText = strtolower(($criteria->code ?? '') . ' ' . ($criteria->title ?? $criteria->nama ?? ''));
             @endphp
 
-            <div class="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden"
+            <div class="bg-white rounded-3xl border border-stone-200 shadow-lg shadow-slate-900/5 overflow-hidden"
                  x-show="searchQuery === '' || '{{ addslashes($criteriaFilterText) }}'.includes(searchQuery.toLowerCase())">
                 
                 <!-- Criteria Header -->
-                <div class="bg-stone-100/90 p-5 sm:p-6 border-b border-stone-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="bg-gradient-to-r from-slate-100 via-blue-50 to-cyan-50 p-5 sm:p-6 border-b border-blue-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2.5">
-                            <span class="px-3 py-1 bg-pln-900 text-white font-extrabold text-xs rounded-full">
+                            <span class="px-3 py-1 bg-pln-900 text-white font-extrabold text-xs rounded-lg shadow-sm">
                                 {{ $criteria->code ?? $criteria->kode ?? 'KRIT' }}
                             </span>
                             <h2 class="text-lg sm:text-xl font-extrabold text-stone-900 font-display">
                                 {{ $criteria->title ?? $criteria->nama ?? 'Kriteria K3' }}
                             </h2>
                         </div>
-                        <p class="text-xs text-stone-500">
-                            Pencapaian Kriteria: <strong>{{ $critApproved }}</strong> dari <strong>{{ $critSlots }}</strong> level disetujui ({{ $critPercent }}%)
+                            <p class="text-xs text-stone-500">
+                            Pencapaian Kriteria: <strong class="text-pln-800">{{ $critApproved }}</strong> dari <strong>{{ $critSlots }}</strong> level disetujui ({{ $critPercent }}%)
                         </p>
                     </div>
 
@@ -78,7 +78,7 @@
                             <span class="text-fore-900">{{ $critPercent }}%</span>
                         </div>
                         <div class="w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
-                            <div class="bg-fore-700 h-2.5 rounded-full transition-all duration-500" style="width: {{ $critPercent }}%"></div>
+                            <div class="bg-gradient-to-r from-pln-700 to-cyan-500 h-2.5 rounded-full transition-all duration-500" style="width: {{ $critPercent }}%"></div>
                         </div>
                     </div>
                 </div>
@@ -86,7 +86,12 @@
                 <!-- Subcriterias Body -->
                 <div class="p-5 sm:p-6 space-y-6">
                     @forelse($criteria->subKriterias as $sub)
-                        <div class="bg-cream-200/50 p-5 rounded-2xl border border-stone-200/90 space-y-4">
+                        @php
+                            $subScore = $sub->maturityLevels
+                                ->filter(fn ($level) => $level->evidenceUpload !== null)
+                                ->max('level') ?? 0;
+                        @endphp
+                        <div class="bg-gradient-to-br from-amber-50/70 via-white to-cyan-50/70 p-5 rounded-2xl border border-blue-100 shadow-sm space-y-4">
                             
                             <!-- Subcriteria Header -->
                             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-stone-200">
@@ -104,10 +109,10 @@
                                     @endif
                                 </div>
 
-                                <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-stone-200 shadow-2xs text-xs">
-                                    <span class="text-stone-500">Nilai SK:</span>
-                                    <span class="font-bold text-fore-900 bg-fore-50 px-2 py-0.5 rounded border border-fore-200">
-                                        {{ $sub->skor_level ?? '0' }}
+                                <div class="flex items-center gap-2 bg-pln-950 px-3 py-1.5 rounded-xl border border-pln-800 shadow-md text-xs text-white">
+                                    <span class="text-blue-200">Nilai SK:</span>
+                                    <span class="font-extrabold text-pln-950 bg-amber-300 px-2.5 py-0.5 rounded-lg">
+                                        {{ $subScore }}
                                     </span>
                                 </div>
                             </div>

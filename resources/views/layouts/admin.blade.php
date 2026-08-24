@@ -46,49 +46,51 @@
         }
     </script>
 </head>
-<body class="bg-stone-50 text-stone-800 font-sans" x-data="{ sidebarOpen: false }">
+<body class="bg-gradient-to-br from-slate-50 via-blue-50/40 to-cyan-50/30 text-stone-800 font-sans" x-data="{ sidebarOpen: false }">
     <div class="min-h-screen flex">
-        <aside class="w-72 bg-white border-r border-stone-200 hidden lg:flex lg:flex-col sticky top-0 h-screen">
-            <div class="px-6 py-5 border-b border-stone-200">
-                <p class="text-[11px] uppercase tracking-[0.2em] text-pln-700 font-bold">Verifikator Workspace</p>
-                <h1 class="text-xl font-extrabold font-display text-pln-900 mt-1">PLN MATLEV Admin</h1>
+        <aside class="w-72 bg-gradient-to-b from-pln-950 via-pln-900 to-cyan-950 text-white hidden lg:flex lg:flex-col sticky top-0 h-screen shadow-2xl shadow-pln-950/20">
+            <div class="px-6 py-6 border-b border-white/10">
+                <p class="text-[11px] uppercase tracking-[0.2em] text-cyan-300 font-bold">Verifikator Workspace</p>
+                <h1 class="text-xl font-extrabold font-display text-white mt-1">PLN MATLEV Admin</h1>
+                <div class="mt-4 h-1 w-16 rounded-full bg-gradient-to-r from-amber-300 to-cyan-300"></div>
             </div>
 
             <nav class="p-4 space-y-1.5">
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.dashboard') ? 'bg-pln-700 text-white shadow-sm' : 'text-stone-600 hover:bg-stone-100' }}">
+                <p class="px-3 pb-2 text-[10px] uppercase tracking-[0.18em] text-blue-200/70 font-bold">Menu Utama</p>
+                <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.dashboard') ? 'bg-white text-pln-900 shadow-lg shadow-black/10' : 'text-blue-100 hover:bg-white/10 hover:text-white' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                     <span>Dashboard</span>
                 </a>
 
-                <a href="{{ route('admin.queue') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.queue') ? 'bg-pln-700 text-white shadow-sm' : 'text-stone-600 hover:bg-stone-100' }}">
+                <a href="{{ route('admin.queue') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.queue') ? 'bg-white text-pln-900 shadow-lg shadow-black/10' : 'text-blue-100 hover:bg-white/10 hover:text-white' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2h-3V3m0 0L9 3m6 0v2M4 7h16M5 7l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12" /></svg>
                     <span>Antrean Verifikasi</span>
                 </a>
 
-                <a href="{{ route('admin.history') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.history') ? 'bg-pln-700 text-white shadow-sm' : 'text-stone-600 hover:bg-stone-100' }}">
+                <a href="{{ route('admin.history') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.history') ? 'bg-white text-pln-900 shadow-lg shadow-black/10' : 'text-blue-100 hover:bg-white/10 hover:text-white' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-3-6.708" /></svg>
                     <span>Riwayat Evaluasi</span>
                 </a>
             </nav>
 
-            <div class="mt-auto p-4 border-t border-stone-200 space-y-3">
-                <a href="{{ route('admin.users') }}" class="block text-xs text-stone-500 hover:text-pln-700 font-semibold">Manajemen User</a>
+            <div class="mt-auto p-4 border-t border-white/10 space-y-3">
+                <a href="{{ route('admin.users') }}" class="block rounded-xl bg-white/10 px-3 py-2 text-xs text-blue-100 hover:bg-white/15 hover:text-white font-semibold">Manajemen User</a>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
-                    <button type="submit" class="w-full py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold">Logout</button>
+                    <button type="submit" class="w-full py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold shadow-lg shadow-rose-950/20 transition">Logout</button>
                 </form>
             </div>
         </aside>
 
         <div class="flex-1 min-w-0">
-            <header class="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-stone-200 px-4 py-3 flex items-center justify-between">
+            <header class="lg:hidden sticky top-0 z-30 bg-pln-950/95 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between text-white">
                 <h2 class="font-display font-extrabold text-pln-900">PLN MATLEV Admin</h2>
-                <button @click="sidebarOpen = true" class="p-2 rounded-lg border border-stone-300 text-stone-700">
+                <button @click="sidebarOpen = true" class="p-2 rounded-lg border border-white/20 text-white">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                 </button>
             </header>
 
-            <main class="p-4 sm:p-6 lg:p-8">
+            <main class="p-4 sm:p-6 lg:p-8 max-w-[1600px]">
                 @yield('content')
             </main>
         </div>

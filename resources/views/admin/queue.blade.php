@@ -4,9 +4,10 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="bg-white border border-stone-200 rounded-3xl p-6 shadow-sm">
-        <h1 class="text-2xl font-extrabold font-display text-stone-900">Antrean Verifikasi</h1>
-        <p class="text-sm text-stone-500 mt-1">Fokus pada berkas berstatus pending dengan filter unit kerja, tanggal upload, dan kriteria K3.</p>
+    <div class="bg-gradient-to-r from-pln-900 via-pln-800 to-cyan-700 rounded-3xl p-6 sm:p-7 shadow-lg shadow-pln-900/15 text-white">
+        <p class="text-xs uppercase tracking-[0.2em] text-cyan-200 font-bold">Pusat Verifikasi</p>
+        <h1 class="text-2xl font-extrabold font-display mt-2">Antrean Verifikasi</h1>
+        <p class="text-sm text-blue-100 mt-1">Tinjau berkas pending berdasarkan tanggal upload dan kriteria K3.</p>
     </div>
 
     @if(session('success'))
@@ -16,17 +17,7 @@
     @endif
 
     <section class="bg-white border border-stone-200 rounded-3xl p-5 shadow-sm">
-        <form method="GET" action="{{ route('admin.queue') }}" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-            <div>
-                <label class="text-xs font-bold text-stone-600 uppercase">Unit Kerja</label>
-                <select name="unit_kerja" class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm bg-white">
-                    <option value="">Semua Unit</option>
-                    @foreach($units as $unit)
-                        <option value="{{ $unit }}" {{ request('unit_kerja') === $unit ? 'selected' : '' }}>{{ $unit }}</option>
-                    @endforeach
-                </select>
-            </div>
-
+        <form method="GET" action="{{ route('admin.queue') }}" class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
             <div>
                 <label class="text-xs font-bold text-stone-600 uppercase">Tanggal Unggah</label>
                 <input type="date" name="upload_date" value="{{ request('upload_date') }}" class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm bg-white">
@@ -78,16 +69,19 @@
                                 <a href="{{ asset('storage/' . $upload->file_path) }}" target="_blank" class="text-pln-700 hover:text-pln-900 underline">{{ $upload->original_filename }}</a>
                             </td>
                             <td class="px-4 py-3 w-80">
-                                <form action="{{ route('admin.verify', $upload->id) }}" method="POST" class="space-y-2">
+                                <div class="space-y-2">
+                                    <form action="{{ route('admin.verify', $upload->id) }}" method="POST">
                                     @csrf
-                                    <select name="status" class="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm bg-white">
-                                        <option value="pending" {{ $upload->status === 'pending' ? 'selected' : '' }}>Pending</option>
-                                        <option value="approved">Setujui</option>
-                                        <option value="rejected">Tolak</option>
-                                    </select>
-                                    <textarea name="rejection_note" rows="2" placeholder="Catatan alasan bila ditolak" class="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm"></textarea>
-                                    <button type="submit" class="w-full rounded-lg bg-pln-700 hover:bg-pln-800 text-white text-sm font-bold py-2">Simpan Evaluasi</button>
-                                </form>
+                                        <input type="hidden" name="status" value="approved">
+                                        <button type="submit" class="w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2.5 shadow-sm transition">Setujui</button>
+                                    </form>
+                                    <form action="{{ route('admin.verify', $upload->id) }}" method="POST" class="space-y-2">
+                                        @csrf
+                                        <input type="hidden" name="status" value="rejected">
+                                        <textarea name="rejection_note" rows="2" required placeholder="Tulis alasan penolakan..." class="w-full rounded-xl border border-rose-200 bg-rose-50/40 px-2.5 py-2 text-sm placeholder:text-rose-300 focus:border-rose-400 focus:ring-rose-200"></textarea>
+                                        <button type="submit" class="w-full rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold py-2.5 shadow-sm transition">Tolak & Simpan Catatan</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
