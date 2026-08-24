@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\EvidenceUpload;
+use App\Models\ActivityLog;
 use App\Models\Kriteria;
 use App\Models\MaturityLevel;
 use App\Models\Subkriteria;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
@@ -160,6 +162,16 @@ class AdminController extends Controller
         $upload->update([
             'status' => $request->status,
             'rejection_note' => $request->status === 'rejected' ? ($request->rejection_note ?? 'Dokumen tidak sesuai dengan persyaratan.') : null,
+        ]);
+
+        ActivityLog::create([
+            'evidence_upload_id' => $upload->id,
+            'maturity_level_id' => $upload->maturity_level_id,
+            'actor_id' => Auth::id(),
+            'activity_type' => 'evaluation',
+            'filename' => $upload->original_filename,
+            'status' => $request->status,
+            'occurred_at' => now(),
         ]);
 
         $message = $request->status === 'approved'

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\DocumentPermissionRequest;
+use App\Models\ActivityLog;
 use App\Models\EvidenceUpload;
 use App\Models\EvidenceRevision;
 use App\Models\Kriteria;
@@ -47,14 +48,37 @@ class RoleAccessTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'atasan@matlev.test', 'role' => 'atasan']);
     }
 
-    public function test_other_user_cannot_edit_until_owner_approves(): void
+    public function test_verifier_evaluation_is_added_to_activity_log(): void
+    {
+        [$owner, $other, $upload] = $this->createDocumentFixture();
+        $verifier = User::factory()->create(['role' => 'admin', 'name' => 'Verifier Test']);
+        $upload->update(['status' => 'pending']);
+
+        $this->actingAs($verifier)
+            ->post(route('admin.verify', $upload), ['status' => 'approved'])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('activity_logs', [
+            'evidence_upload_id' => $upload->id,
+            'actor_id' => $verifier->id,
+            'activity_type' => 'evaluation',
+            'status' => 'approved',
+        ]);
+
+        $this->actingAs($owner)
+            ->get(route('user.history'))
+            ->assertOk()
+            ->assertSee('Verifikator menyetujui file original.pdf');
+    }
+
+    public function test_other_user_cannot_delete_until_owner_approves(): void
     {
         Storage::fake('public');
         [$owner, $other, $upload] = $this->createDocumentFixture();
         $upload->update(['status' => 'pending']);
 
         $this->actingAs($other)
-            ->post(route('documents.edit', $upload), ['pdf_file' => UploadedFile::fake()->create('replacement.pdf', 10, 'application/pdf')])
+            ->delete(route('documents.delete', $upload))
             ->assertForbidden();
 
         $this->actingAs($other)
@@ -67,15 +91,16 @@ class RoleAccessTest extends TestCase
             ->assertSessionHas('success');
 
         $this->actingAs($other)
-            ->post(route('documents.edit', $upload), ['pdf_file' => UploadedFile::fake()->create('replacement.pdf', 10, 'application/pdf')])
+            ->delete(route('documents.delete', $upload))
             ->assertSessionHas('success');
 
-        $this->assertDatabaseHas('evidence_uploads', [
-            'id' => $upload->id,
-            'original_filename' => 'replacement.pdf',
-            'status' => 'pending',
+        $this->assertDatabaseMissing('evidence_uploads', ['id' => $upload->id]);
+        $this->assertDatabaseHas('activity_logs', [
+            'maturity_level_id' => $upload->maturity_level_id,
+            'actor_id' => $other->id,
+            'activity_type' => 'delete',
+            'filename' => 'original.pdf',
         ]);
-        $this->assertNotNull($permission->fresh()->used_at);
     }
 
     public function test_other_user_cannot_request_edit_for_approved_document(): void
@@ -83,7 +108,7 @@ class RoleAccessTest extends TestCase
         [$owner, $other, $upload] = $this->createDocumentFixture();
 
         $this->actingAs($owner)
-            ->post(route('documents.edit', $upload), ['pdf_file' => UploadedFile::fake()->create('replacement.pdf', 10, 'application/pdf')])
+            ->delete(route('documents.delete', $upload))
             ->assertStatus(422);
 
         $this->actingAs($other)
@@ -101,6 +126,7 @@ class RoleAccessTest extends TestCase
     {
         Storage::fake('public');
         [$owner, $other, $upload] = $this->createDocumentFixture();
+        $upload->update(['status' => 'pending']);
 
         $this->actingAs($other)
             ->delete(route('documents.delete', $upload))
@@ -193,7 +219,7 @@ class RoleAccessTest extends TestCase
         ]);
     }
 
-    public function test_history_keeps_rejected_original_and_revision_as_separate_entries(): void
+    public function test_history_does_not_duplicate_rejected_file_after_revision_upload(): void
     {
         Storage::fake('public');
         [$owner, $other, $upload] = $this->createDocumentFixture();
@@ -206,10 +232,8 @@ class RoleAccessTest extends TestCase
         $response = $this->actingAs($owner)->get(route('user.history'));
 
         $response->assertOk()
-            ->assertSee('original.pdf')
             ->assertSee('revision-level-1.pdf')
-            ->assertSee('Ditolak / Perlu Revisi')
-            ->assertSee('revision-level-1.pdf');
+            ->assertDontSee('original.pdf');
     }
 
     private function createDocumentFixture(): array

@@ -8,13 +8,13 @@
     <!-- Google Fonts Import -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Definisi Custom Font Class */
-        .font-lora {
-            font-family: 'Lora', serif;
+        .font-formal {
+            font-family: 'Merriweather', serif;
         }
         .font-sans-elegan {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -64,8 +64,8 @@
 
             <!-- Wrapper Form -->
             <div class="mt-4 mb-auto max-w-md w-full mx-auto">
-                <!-- Judul Utama (Font Lora - Ukuran text-5xl) -->
-                <h1 class="font-lora text-5xl font-bold text-gray-900 tracking-tight mt-4">Selamat Datang</h1>
+                <!-- Judul utama -->
+                <h1 class="font-formal text-5xl font-bold text-gray-900 tracking-tight mt-4">Selamat Datang</h1>
                 
                 <!-- Seluruh Konten di bawahnya -->
                 <div class="mt-16">
@@ -150,8 +150,8 @@
 
             <!-- Wrapper Form -->
             <div class="mt-4 mb-auto max-w-md w-full mx-auto">
-                <!-- Judul Utama (Font Lora - Tetap text-4xl) -->
-                <h1 class="font-lora text-4xl font-bold text-gray-900 tracking-tight mt-4">Buat Akun</h1>
+                <!-- Judul utama -->
+                <h1 class="font-formal text-4xl font-bold text-gray-900 tracking-tight mt-4">Buat Akun</h1>
                 
                 <!-- Seluruh Konten di bawahnya -->
                 <div class="mt-14">

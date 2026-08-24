@@ -23,7 +23,6 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/upload/{maturityLevelId}', [MatlevController::class, 'upload'])->name('matlev.upload');
         Route::delete('/documents/revisions/{revision}', [DocumentPermissionController::class, 'destroyRevision'])->name('documents.revisions.delete');
         Route::post('/documents/{upload}/permission', [DocumentPermissionController::class, 'request'])->name('documents.permission.request');
-        Route::post('/documents/{upload}/edit', [DocumentPermissionController::class, 'update'])->name('documents.edit');
         Route::delete('/documents/{upload}', [DocumentPermissionController::class, 'destroy'])->name('documents.delete');
         Route::post('/document-permissions/{permissionRequest}/respond', [DocumentPermissionController::class, 'respond'])->name('documents.permission.respond');
         Route::get('/export/bukti-terima', [MatlevController::class, 'exportReceipt'])->name('user.export.receipt');

@@ -108,7 +108,7 @@
                     </div>
 
                     <!-- Right: Form Re-upload Revisi (Fungsionalitas Asli) -->
-                    <div class="w-full lg:w-80 bg-cream-100 p-4 sm:p-5 rounded-2xl border border-stone-200 shrink-0 space-y-3">
+                    <div class="w-full lg:w-80 bg-stone-100 p-4 sm:p-5 rounded-2xl border border-stone-200 shrink-0 space-y-3">
                         <div class="flex items-center gap-2 text-xs font-bold text-stone-800">
                             <span>🔄</span>
                             <span>Ganti Menjadi File Revisi:</span>
@@ -129,7 +129,7 @@
                                    class="block w-full text-xs text-stone-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-white file:text-stone-800 file:border file:border-stone-300 hover:file:bg-stone-50 cursor-pointer">
                             <button type="submit" 
                                     :disabled="!selectedFile"
-                                    :class="selectedFile ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-rose-300 text-rose-100 cursor-not-allowed'"
+                                    :class="selectedFile ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-rose-300 text-rose-800 cursor-not-allowed'"
                                     class="w-full text-xs font-bold py-2.5 px-4 rounded-full transition shadow-sm flex items-center justify-center gap-2">
                                 <span>Kirim File Revisi</span>
                                 <span>&rarr;</span>
@@ -153,7 +153,7 @@
                 Tidak ada berkas yang memerlukan revisi saat ini. Seluruh eviden yang Anda kirimkan telah memenuhi syarat atau sedang dalam proses peninjauan.
             </p>
             <div class="pt-2">
-                <a href="{{ route('user.kriteria') }}" class="px-6 py-2.5 bg-fore-900 hover:bg-fore-800 text-white text-xs font-bold rounded-full transition shadow-sm inline-block">
+                <a href="{{ route('user.kriteria') }}" class="px-6 py-2.5 bg-pln-900 hover:bg-pln-800 text-white text-xs font-bold rounded-full transition shadow-sm inline-block">
                     Lihat Daftar Kriteria &rarr;
                 </a>
             </div>

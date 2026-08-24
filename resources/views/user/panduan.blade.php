@@ -19,7 +19,7 @@
             </p>
         </div>
 
-        <a href="{{ route('user.kriteria') }}" class="px-5 py-2.5 bg-fore-900 hover:bg-fore-800 text-white text-xs font-bold rounded-full transition shadow-sm shrink-0 flex items-center gap-2 self-start md:self-auto">
+        <a href="{{ route('user.kriteria') }}" class="px-5 py-2.5 bg-pln-900 hover:bg-pln-800 text-white text-xs font-bold rounded-full transition shadow-sm shrink-0 flex items-center gap-2 self-start md:self-auto">
             <span>Mulai Isi Kriteria</span>
             <span>&rarr;</span>
         </a>
@@ -34,16 +34,16 @@
 
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             
-            <div class="bg-cream-100 p-5 rounded-2xl border border-stone-200 space-y-2 relative">
-                <span class="w-8 h-8 rounded-full bg-fore-900 text-white font-extrabold text-xs flex items-center justify-center font-display">1</span>
+            <div class="bg-stone-100 p-5 rounded-2xl border border-stone-200 space-y-2 relative">
+                <span class="w-8 h-8 rounded-full bg-pln-900 text-white font-extrabold text-xs flex items-center justify-center font-display">1</span>
                 <h3 class="font-bold text-stone-900 text-sm">Pilih Kriteria</h3>
                 <p class="text-xs text-stone-600 leading-relaxed">
                     Buka menu Daftar Kriteria dan pilih subkriteria yang ingin dilengkapi evidennya.
                 </p>
             </div>
 
-            <div class="bg-cream-100 p-5 rounded-2xl border border-stone-200 space-y-2 relative">
-                <span class="w-8 h-8 rounded-full bg-fore-900 text-white font-extrabold text-xs flex items-center justify-center font-display">2</span>
+            <div class="bg-stone-100 p-5 rounded-2xl border border-stone-200 space-y-2 relative">
+                <span class="w-8 h-8 rounded-full bg-pln-900 text-white font-extrabold text-xs flex items-center justify-center font-display">2</span>
                 <h3 class="font-bold text-stone-900 text-sm">Upload PDF</h3>
                 <p class="text-xs text-stone-600 leading-relaxed">
                     Lampirkan file PDF (maks. 10MB) yang memuat bukti pemenuhan indikator level.

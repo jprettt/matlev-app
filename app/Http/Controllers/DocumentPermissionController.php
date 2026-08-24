@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DocumentPermissionRequest;
 use App\Models\EvidenceRevision;
 use App\Models\EvidenceUpload;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ class DocumentPermissionController extends Controller
 
         abort_if($upload->user_id === Auth::id(), 422, 'Pemilik dokumen tidak perlu meminta izin.');
         abort_if($upload->status === 'approved', 422, 'Dokumen yang sudah disetujui tidak memerlukan permintaan izin edit.');
-        DocumentPermissionRequest::updateOrCreate(
+        $permissionRequest = DocumentPermissionRequest::updateOrCreate(
             [
                 'evidence_upload_id' => $upload->id,
                 'requester_id' => Auth::id(),
@@ -29,6 +30,17 @@ class DocumentPermissionController extends Controller
             ],
             ['owner_id' => $upload->user_id]
         );
+
+        ActivityLog::create([
+            'evidence_upload_id' => $upload->id,
+            'maturity_level_id' => $upload->maturity_level_id,
+            'actor_id' => Auth::id(),
+            'target_user_id' => $upload->user_id,
+            'activity_type' => 'permission_request',
+            'filename' => $upload->original_filename,
+            'status' => $permissionRequest->status,
+            'occurred_at' => now(),
+        ]);
 
         return back()->with('success', 'Permintaan izin telah dikirim kepada pemilik dokumen.');
     }
@@ -47,51 +59,40 @@ class DocumentPermissionController extends Controller
             'responded_at' => now(),
         ]);
 
-        return back()->with('success', 'Permintaan izin telah ' . ($validated['status'] === 'approved' ? 'disetujui.' : 'ditolak.'));
-    }
-
-    public function update(Request $request, EvidenceUpload $upload)
-    {
-        abort_if($upload->status === 'approved', 422, 'Dokumen yang sudah disetujui tidak dapat diganti.');
-
-        $request->validate([
-            'pdf_file' => 'required|mimes:pdf|max:10240',
+        ActivityLog::create([
+            'evidence_upload_id' => $permissionRequest->evidence_upload_id,
+            'maturity_level_id' => $permissionRequest->evidenceUpload->maturity_level_id,
+            'actor_id' => Auth::id(),
+            'target_user_id' => $permissionRequest->requester_id,
+            'activity_type' => $validated['status'] === 'approved' ? 'permission_granted' : 'permission_rejected',
+            'filename' => $permissionRequest->evidenceUpload->original_filename,
+            'status' => $validated['status'],
+            'occurred_at' => $permissionRequest->responded_at,
         ]);
 
-        $permission = $this->usablePermission($upload, 'edit');
-        abort_unless($upload->user_id === Auth::id() || $permission, 403, 'Anda belum mendapat izin edit dari pemilik dokumen.');
-
-        $file = $request->file('pdf_file');
-        $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
-        $path = $file->storeAs('evidence_pdfs', $filename, 'public');
-        $oldPath = $upload->file_path;
-
-        DB::transaction(function () use ($upload, $path, $file, $permission) {
-            $upload->update([
-                'file_path' => $path,
-                'original_filename' => $file->getClientOriginalName(),
-                'status' => 'pending',
-                'rejection_note' => null,
-                'uploaded_at' => now(),
-            ]);
-
-            if ($permission) {
-                $permission->update(['used_at' => now()]);
-            }
-        });
-
-        Storage::disk('public')->delete($oldPath);
-
-        return back()->with('success', 'Dokumen berhasil diganti dan menunggu verifikasi ulang.');
+        return back()->with('success', 'Permintaan izin telah ' . ($validated['status'] === 'approved' ? 'disetujui.' : 'ditolak.'));
     }
 
     public function destroy(EvidenceUpload $upload)
     {
+        abort_if($upload->status === 'approved', 422, 'Dokumen yang sudah disetujui tidak dapat dihapus.');
         abort_if($upload->status === 'rejected', 422, 'Dokumen ditolak harus tetap tercatat sampai pemilik atau user mengirim revisi.');
 
-        abort_unless($upload->user_id === Auth::id(), 403, 'Hanya pemilik dokumen yang dapat menghapusnya.');
+        $permission = $this->usablePermission($upload, 'edit');
+        abort_unless($upload->user_id === Auth::id() || $permission, 403, 'Anda belum mendapat izin untuk menghapus dokumen ini.');
 
         Storage::disk('public')->delete($upload->file_path);
+        ActivityLog::create([
+            'evidence_upload_id' => $upload->id,
+            'maturity_level_id' => $upload->maturity_level_id,
+            'actor_id' => Auth::id(),
+            'activity_type' => 'delete',
+            'filename' => $upload->original_filename,
+            'occurred_at' => now(),
+        ]);
+        if ($permission) {
+            $permission->update(['used_at' => now()]);
+        }
         $upload->delete();
 
         return back()->with('success', 'Dokumen berhasil dihapus.');
@@ -111,6 +112,14 @@ class DocumentPermissionController extends Controller
         abort_if($revision->is_current && $upload->status === 'rejected', 422, 'File aktif yang membutuhkan revisi tidak dapat dihapus dari riwayat.');
 
         Storage::disk('public')->delete($revision->file_path);
+        ActivityLog::create([
+            'evidence_upload_id' => $upload->id,
+            'maturity_level_id' => $upload->maturity_level_id,
+            'actor_id' => Auth::id(),
+            'activity_type' => 'delete',
+            'filename' => $revision->original_filename,
+            'occurred_at' => now(),
+        ]);
         $revision->update([
             'status' => 'deleted',
             'deleted_at' => now(),

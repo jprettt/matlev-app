@@ -24,7 +24,7 @@
             <input type="text" 
                    x-model="searchQuery" 
                    placeholder="Cari kriteria atau subkriteria..." 
-                   class="w-full bg-cream-100 border border-stone-300 rounded-full py-2.5 pl-10 pr-4 text-xs sm:text-sm focus:outline-none focus:border-fore-700 focus:bg-white transition-colors">
+                   class="w-full bg-stone-100 border border-stone-300 rounded-full py-2.5 pl-10 pr-4 text-xs sm:text-sm focus:outline-none focus:border-pln-700 focus:bg-white transition-colors">
             <svg class="w-4 h-4 text-stone-400 absolute left-3.5 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -57,10 +57,10 @@
                  x-show="searchQuery === '' || '{{ addslashes($criteriaFilterText) }}'.includes(searchQuery.toLowerCase())">
                 
                 <!-- Criteria Header -->
-                <div class="bg-cream-100/90 p-5 sm:p-6 border-b border-stone-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="bg-stone-100/90 p-5 sm:p-6 border-b border-stone-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div class="space-y-1">
                         <div class="flex items-center gap-2.5">
-                            <span class="px-3 py-1 bg-fore-900 text-white font-extrabold text-xs rounded-full">
+                            <span class="px-3 py-1 bg-pln-900 text-white font-extrabold text-xs rounded-full">
                                 {{ $criteria->code ?? $criteria->kode ?? 'KRIT' }}
                             </span>
                             <h2 class="text-lg sm:text-xl font-extrabold text-stone-900 font-display">
@@ -120,7 +120,7 @@
                                         $canUpload = $lvl->level === 1 || ($previousLevel && $previousLevel->evidenceUpload);
                                         $currentRevision = $lvl->evidenceUpload?->revisions->first(fn ($revision) => $revision->is_current && $revision->status !== 'deleted');
                                     @endphp
-                                    <div class="{{ $canUpload ? 'bg-white' : 'bg-stone-50' }} p-3.5 rounded-2xl border border-stone-200/90 shadow-xs flex flex-col justify-between hover:border-fore-300 transition-colors">
+                                    <div id="level-{{ $lvl->id }}" class="{{ $canUpload ? 'bg-white' : 'bg-stone-50' }} p-3.5 rounded-2xl border border-stone-200/90 shadow-xs flex flex-col justify-between hover:border-fore-300 transition-colors">
                                         <div>
                                             <div class="flex items-center justify-between mb-2">
                                                 <span class="px-2 py-0.5 bg-stone-100 text-fore-900 font-extrabold text-[11px] rounded-md border border-stone-200">
@@ -238,7 +238,7 @@
                                                                    class="block w-full text-[10px] text-stone-500 file:mr-1 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:bg-rose-100 file:text-rose-800 hover:file:bg-rose-200 cursor-pointer">
                                                             <button type="submit" 
                                                                     :disabled="!selectedFile"
-                                                                    :class="selectedFile ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-rose-300 text-rose-100 cursor-not-allowed'"
+                                                                    :class="selectedFile ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-rose-300 text-rose-900 cursor-not-allowed'"
                                                                     class="w-full text-[10px] font-bold py-1.5 px-2 rounded-lg transition shadow-xs">
                                                                 Upload Revisi
                                                             </button>
@@ -258,7 +258,7 @@
                                                            class="block w-full text-[10px] text-stone-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:bg-stone-100 file:text-stone-700 hover:file:bg-stone-200 cursor-pointer">
                                                     <button type="submit" 
                                                             :disabled="!selectedFile"
-                                                            :class="selectedFile ? 'bg-fore-900 hover:bg-fore-800 text-white' : 'bg-stone-300 text-stone-100 cursor-not-allowed'"
+                                                            :class="selectedFile ? 'bg-pln-900 hover:bg-pln-800 text-white' : 'bg-stone-300 text-stone-700 cursor-not-allowed'"
                                                             class="w-full text-[11px] font-bold py-1.5 px-3 rounded-lg transition shadow-xs">
                                                         Upload PDF
                                                     </button>
@@ -278,12 +278,12 @@
                                                 <div class="mt-2 pt-2 border-t border-stone-100 space-y-1.5">
                                                     @if($canEdit && $document->status !== 'approved')
                                                         @if($myPermission)
-                                                            <p class="text-[10px] text-emerald-700 font-bold">Izin pemilik disetujui untuk penggantian.</p>
+                                                            <p class="text-[10px] text-emerald-700 font-bold">Izin pemilik disetujui untuk menghapus dokumen.</p>
                                                         @endif
-                                                        <form action="{{ route('documents.edit', $document) }}" method="POST" enctype="multipart/form-data" class="space-y-1">
+                                                        <form action="{{ route('documents.delete', $document) }}" method="POST" onsubmit="return confirm('Hapus dokumen ini? Setelah dihapus, Anda dapat mengunggah file baru.')">
                                                                 @csrf
-                                                                <input type="file" name="pdf_file" accept="application/pdf" required class="block w-full text-[10px] text-stone-500 file:mr-1 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:bg-blue-100 file:text-blue-800 cursor-pointer">
-                                                                <button class="w-full text-[10px] font-bold py-1.5 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Ganti Dokumen</button>
+                                                                @method('DELETE')
+                                                                <button class="w-full text-[10px] font-bold py-1.5 px-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100">Hapus Dokumen</button>
                                                         </form>
                                                     @elseif($document->status !== 'approved' && $document->permissionRequests->first(fn ($permission) => (int) $permission->requester_id === (int) Auth::id() && $permission->action === 'edit' && $permission->status === 'pending'))
                                                         <p class="text-[10px] text-amber-700 font-semibold">Permintaan izin sedang menunggu persetujuan pemilik.</p>

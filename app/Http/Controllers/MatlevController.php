@@ -7,6 +7,7 @@ use App\Models\MaturityLevel;
 use App\Models\EvidenceUpload;
 use App\Models\DocumentPermissionRequest;
 use App\Models\EvidenceRevision;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -63,8 +64,12 @@ class MatlevController extends Controller
                             ];
                         }
 
+                        $activeRevisionForHistory = $lvl->evidenceUpload->revisions
+                            ->first(fn ($revision) => $revision->is_current && $revision->status !== 'deleted');
+
                         // Kumpulkan riwayat aktivitas
-                        $allHistories[] = [
+                        if (! $activeRevisionForHistory) {
+                            $allHistories[] = [
                             'criteria_code' => $crit->code ?? $crit->kode ?? '',
                             'criteria_title' => $crit->title ?? $crit->nama ?? '',
                             'sub_code' => $sub->code ?? $sub->kode ?? '',
@@ -78,9 +83,14 @@ class MatlevController extends Controller
                             'uploader_id' => $lvl->evidenceUpload->user_id,
                             'uploader' => $lvl->evidenceUpload->user->name ?? 'User',
                             'time' => $lvl->evidenceUpload->uploaded_at ?? $lvl->evidenceUpload->created_at,
-                        ];
+                            ];
+                        }
 
                         foreach ($lvl->evidenceUpload->revisions as $revision) {
+                            if ($activeRevisionForHistory && ! $revision->is_current && $revision->status !== 'deleted') {
+                                continue;
+                            }
+
                             $allHistories[] = [
                                 'criteria_code' => $crit->code ?? $crit->kode ?? '',
                                 'criteria_title' => $crit->title ?? $crit->nama ?? '',
@@ -168,6 +178,10 @@ class MatlevController extends Controller
     public function riwayat()
     {
         $data = $this->getStatsAndData();
+        $data['activityLogs'] = ActivityLog::with(['actor', 'targetUser', 'maturityLevel.subkriteria'])
+            ->orderByDesc('occurred_at')
+            ->get();
+
         return view('user.riwayat', $data);
     }
 
@@ -215,6 +229,8 @@ class MatlevController extends Controller
         if ($maturityLevel->evidenceUpload && $maturityLevel->evidenceUpload->status !== 'rejected') {
             return redirect()->back()->with('error', 'Gagal: Slot indikator kematangan ini sudah diisi oleh ' . $maturityLevel->evidenceUpload->user->name);
         }
+
+        $isRevision = (bool) ($existingUpload && $existingUpload->status === 'rejected');
 
         try {
             DB::transaction(function () use ($request, $maturityLevel) {
@@ -277,6 +293,17 @@ class MatlevController extends Controller
                     ]);
                 }
             });
+
+            $upload = $maturityLevel->fresh()->evidenceUpload;
+            ActivityLog::create([
+                'evidence_upload_id' => $upload->id,
+                'maturity_level_id' => $maturityLevel->id,
+                'actor_id' => Auth::id(),
+                'activity_type' => $isRevision ? 'revision_upload' : 'upload',
+                'filename' => $upload->original_filename,
+                'status' => $upload->status,
+                'occurred_at' => $upload->uploaded_at ?? now(),
+            ]);
 
             return redirect()->back()->with('success', 'Bukti dokumen PDF berhasil diunggah dan sedang menunggu penilaian!');
         } catch (\Exception $e) {
