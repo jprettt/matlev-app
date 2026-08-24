@@ -8,12 +8,12 @@
         <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-4">
             <div>
                 <h2 class="font-extrabold text-amber-950">Permintaan izin dokumen</h2>
-                <p class="text-sm text-amber-800">User lain meminta izin untuk mengubah atau menghapus dokumen milik Anda.</p>
+                <p class="text-sm text-amber-800">User lain meminta izin untuk mengubah dokumen milik Anda.</p>
             </div>
             @foreach($pendingPermissionRequests as $permissionRequest)
                 <div class="bg-white border border-amber-200 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                     <div class="text-sm text-stone-700">
-                        <p><strong>{{ $permissionRequest->requester->name }}</strong> meminta izin <strong>{{ $permissionRequest->action === 'edit' ? 'mengganti' : 'menghapus' }}</strong> dokumen <strong>{{ $permissionRequest->evidenceUpload->original_filename }}</strong>.</p>
+                        <p><strong>{{ $permissionRequest->requester->name }}</strong> meminta izin <strong>mengganti</strong> dokumen <strong>{{ $permissionRequest->evidenceUpload->original_filename }}</strong>.</p>
                         <p class="text-xs text-stone-500 mt-1">{{ $permissionRequest->evidenceUpload->maturityLevel->subkriteria->title ?? '-' }} • Level {{ $permissionRequest->evidenceUpload->maturityLevel->level ?? '-' }}</p>
                     </div>
                     <div class="flex gap-2 shrink-0">

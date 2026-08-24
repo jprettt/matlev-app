@@ -51,6 +51,7 @@ class RoleAccessTest extends TestCase
     {
         Storage::fake('public');
         [$owner, $other, $upload] = $this->createDocumentFixture();
+        $upload->update(['status' => 'pending']);
 
         $this->actingAs($other)
             ->post(route('documents.edit', $upload), ['pdf_file' => UploadedFile::fake()->create('replacement.pdf', 10, 'application/pdf')])
@@ -77,7 +78,26 @@ class RoleAccessTest extends TestCase
         $this->assertNotNull($permission->fresh()->used_at);
     }
 
-    public function test_other_user_cannot_delete_until_owner_approves(): void
+    public function test_other_user_cannot_request_edit_for_approved_document(): void
+    {
+        [$owner, $other, $upload] = $this->createDocumentFixture();
+
+        $this->actingAs($owner)
+            ->post(route('documents.edit', $upload), ['pdf_file' => UploadedFile::fake()->create('replacement.pdf', 10, 'application/pdf')])
+            ->assertStatus(422);
+
+        $this->actingAs($other)
+            ->post(route('documents.permission.request', $upload), ['action' => 'edit'])
+            ->assertStatus(422);
+
+        $this->assertDatabaseMissing('document_permission_requests', [
+            'evidence_upload_id' => $upload->id,
+            'requester_id' => $other->id,
+            'action' => 'edit',
+        ]);
+    }
+
+    public function test_other_user_cannot_request_delete_permission_or_delete_document(): void
     {
         Storage::fake('public');
         [$owner, $other, $upload] = $this->createDocumentFixture();
@@ -87,18 +107,13 @@ class RoleAccessTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($other)
-            ->post(route('documents.permission.request', $upload), ['action' => 'delete']);
+            ->post(route('documents.permission.request', $upload), ['action' => 'delete'])
+            ->assertSessionHasErrors('action');
 
-        $permission = DocumentPermissionRequest::firstOrFail();
-        $this->actingAs($owner)
-            ->post(route('documents.permission.respond', $permission), ['status' => 'approved']);
-
-        $this->actingAs($other)
-            ->delete(route('documents.delete', $upload))
-            ->assertSessionHas('success');
-
-        $this->assertDatabaseMissing('evidence_uploads', ['id' => $upload->id]);
-        $this->assertDatabaseMissing('document_permission_requests', ['id' => $permission->id]);
+        $this->assertDatabaseMissing('document_permission_requests', [
+            'evidence_upload_id' => $upload->id,
+            'action' => 'delete',
+        ]);
     }
 
     public function test_user_must_upload_previous_level_first(): void

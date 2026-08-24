@@ -15,10 +15,11 @@ class DocumentPermissionController extends Controller
     public function request(Request $request, EvidenceUpload $upload)
     {
         $validated = $request->validate([
-            'action' => 'required|in:edit,delete',
+            'action' => 'required|in:edit',
         ]);
 
         abort_if($upload->user_id === Auth::id(), 422, 'Pemilik dokumen tidak perlu meminta izin.');
+        abort_if($upload->status === 'approved', 422, 'Dokumen yang sudah disetujui tidak memerlukan permintaan izin edit.');
         DocumentPermissionRequest::updateOrCreate(
             [
                 'evidence_upload_id' => $upload->id,
@@ -51,6 +52,8 @@ class DocumentPermissionController extends Controller
 
     public function update(Request $request, EvidenceUpload $upload)
     {
+        abort_if($upload->status === 'approved', 422, 'Dokumen yang sudah disetujui tidak dapat diganti.');
+
         $request->validate([
             'pdf_file' => 'required|mimes:pdf|max:10240',
         ]);
@@ -86,8 +89,7 @@ class DocumentPermissionController extends Controller
     {
         abort_if($upload->status === 'rejected', 422, 'Dokumen ditolak harus tetap tercatat sampai pemilik atau user mengirim revisi.');
 
-        $permission = $this->usablePermission($upload, 'delete');
-        abort_unless($upload->user_id === Auth::id() || $permission, 403, 'Anda belum mendapat izin hapus dari pemilik dokumen.');
+        abort_unless($upload->user_id === Auth::id(), 403, 'Hanya pemilik dokumen yang dapat menghapusnya.');
 
         Storage::disk('public')->delete($upload->file_path);
         $upload->delete();

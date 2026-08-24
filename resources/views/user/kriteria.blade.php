@@ -271,45 +271,28 @@
                                             @if($lvl->evidenceUpload && $lvl->evidenceUpload->status !== 'rejected')
                                                 @php
                                                     $document = $lvl->evidenceUpload;
-                                                    $myPermission = $document->permissionRequests->first(fn ($permission) => (int) $permission->requester_id === (int) Auth::id() && $permission->status === 'approved' && is_null($permission->used_at));
+                                                    $myPermission = $document->permissionRequests->first(fn ($permission) => (int) $permission->requester_id === (int) Auth::id() && $permission->action === 'edit' && $permission->status === 'approved' && is_null($permission->used_at));
                                                     $isOwner = (int) $document->user_id === (int) Auth::id();
                                                     $canEdit = $isOwner || ($myPermission && $myPermission->action === 'edit');
-                                                    $canDelete = $isOwner || ($myPermission && $myPermission->action === 'delete');
                                                 @endphp
                                                 <div class="mt-2 pt-2 border-t border-stone-100 space-y-1.5">
-                                                    @if($canEdit || $canDelete)
+                                                    @if($canEdit && $document->status !== 'approved')
                                                         @if($myPermission)
-                                                            <p class="text-[10px] text-emerald-700 font-bold">Izin pemilik disetujui untuk aksi {{ $myPermission->action === 'edit' ? 'penggantian' : 'penghapusan' }}.</p>
+                                                            <p class="text-[10px] text-emerald-700 font-bold">Izin pemilik disetujui untuk penggantian.</p>
                                                         @endif
-                                                        @if($canEdit)
-                                                            <form action="{{ route('documents.edit', $document) }}" method="POST" enctype="multipart/form-data" class="space-y-1">
+                                                        <form action="{{ route('documents.edit', $document) }}" method="POST" enctype="multipart/form-data" class="space-y-1">
                                                                 @csrf
                                                                 <input type="file" name="pdf_file" accept="application/pdf" required class="block w-full text-[10px] text-stone-500 file:mr-1 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:bg-blue-100 file:text-blue-800 cursor-pointer">
                                                                 <button class="w-full text-[10px] font-bold py-1.5 px-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Ganti Dokumen</button>
-                                                            </form>
-                                                        @endif
-                                                        @if($canDelete)
-                                                            <form action="{{ route('documents.delete', $document) }}" method="POST" onsubmit="return confirm('Hapus dokumen ini?')">
-                                                                @csrf
-                                                                @method('DELETE')
-                                                                <button class="w-full text-[10px] font-bold py-1.5 px-2 rounded-lg bg-white border border-rose-300 text-rose-700 hover:bg-rose-50">Hapus Dokumen</button>
-                                                            </form>
-                                                        @endif
-                                                    @elseif($document->permissionRequests->first(fn ($permission) => (int) $permission->requester_id === (int) Auth::id() && $permission->status === 'pending'))
+                                                        </form>
+                                                    @elseif($document->status !== 'approved' && $document->permissionRequests->first(fn ($permission) => (int) $permission->requester_id === (int) Auth::id() && $permission->action === 'edit' && $permission->status === 'pending'))
                                                         <p class="text-[10px] text-amber-700 font-semibold">Permintaan izin sedang menunggu persetujuan pemilik.</p>
-                                                    @else
-                                                        <div class="grid grid-cols-2 gap-1.5">
-                                                            <form action="{{ route('documents.permission.request', $document) }}" method="POST">
+                                                    @elseif($document->status !== 'approved')
+                                                        <form action="{{ route('documents.permission.request', $document) }}" method="POST">
                                                                 @csrf
                                                                 <input type="hidden" name="action" value="edit">
-                                                                <button class="w-full text-[10px] font-bold py-1.5 px-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100">Minta Izin Edit</button>
-                                                            </form>
-                                                            <form action="{{ route('documents.permission.request', $document) }}" method="POST">
-                                                                @csrf
-                                                                <input type="hidden" name="action" value="delete">
-                                                                <button class="w-full text-[10px] font-bold py-1.5 px-1 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100">Minta Izin Hapus</button>
-                                                            </form>
-                                                        </div>
+                                                                <button class="w-full text-[10px] font-bold py-1.5 px-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100">Meminta Izin Edit</button>
+                                                        </form>
                                                     @endif
                                                 </div>
                                             @endif

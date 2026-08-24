@@ -23,6 +23,7 @@ class MatlevController extends Controller
         $criterias = Kriteria::with(['subKriterias.maturityLevels.evidenceUpload.user', 'subKriterias.maturityLevels.evidenceUpload.permissionRequests', 'subKriterias.maturityLevels.evidenceUpload.revisions.user', 'subKriterias.maturityLevels.evidenceUpload.revisions.deletedBy'])->get();
         $pendingPermissionRequests = DocumentPermissionRequest::with(['evidenceUpload.maturityLevel.subkriteria.kriteria', 'requester'])
             ->where('owner_id', Auth::id())
+            ->where('action', 'edit')
             ->where('status', 'pending')
             ->latest()
             ->get();
