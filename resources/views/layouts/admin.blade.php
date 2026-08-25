@@ -48,33 +48,33 @@
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50/40 to-cyan-50/30 text-stone-800 font-sans" x-data="{ sidebarOpen: false }">
     <div class="min-h-screen flex">
-        <aside class="w-72 bg-gradient-to-b from-pln-950 via-pln-900 to-cyan-950 text-white hidden lg:flex lg:flex-col sticky top-0 h-screen shadow-2xl shadow-pln-950/20">
+        <aside class="w-72 bg-white text-stone-900 hidden lg:flex lg:flex-col sticky top-0 h-screen shadow-2xl shadow-amber-900/20" style="background-image: url('{{ asset('images/batik kuning.png') }}'); background-size: 560px auto; background-position: center top;">
             <div class="px-6 py-6 border-b border-white/10">
-                <p class="text-[11px] uppercase tracking-[0.2em] text-cyan-300 font-bold">Verifikator Workspace</p>
-                <h1 class="text-xl font-extrabold font-display text-white mt-1">PLN MATLEV Admin</h1>
-                <div class="mt-4 h-1 w-16 rounded-full bg-gradient-to-r from-amber-300 to-cyan-300"></div>
+                <p class="text-[11px] uppercase tracking-[0.2em] text-amber-800 font-bold">Verifikator Workspace</p>
+                <h1 class="text-xl font-extrabold font-display text-stone-900 mt-1">PLN MATLEV Admin</h1>
+                <div class="mt-4 h-1 w-16 rounded-full bg-amber-400"></div>
             </div>
 
             <nav class="p-4 space-y-1.5">
-                <p class="px-3 pb-2 text-[10px] uppercase tracking-[0.18em] text-blue-200/70 font-bold">Menu Utama</p>
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.dashboard') ? 'bg-white text-pln-900 shadow-lg shadow-black/10' : 'text-blue-100 hover:bg-white/10 hover:text-white' }}">
+                <p class="px-3 pb-2 text-[10px] uppercase tracking-[0.18em] text-amber-800 font-bold">Menu Utama</p>
+                <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.dashboard') ? 'bg-white text-amber-800 shadow-lg shadow-amber-900/10' : 'text-stone-800 hover:bg-white/70 hover:text-amber-900' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
                     <span>Dashboard</span>
                 </a>
 
-                <a href="{{ route('admin.queue') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.queue') ? 'bg-white text-pln-900 shadow-lg shadow-black/10' : 'text-blue-100 hover:bg-white/10 hover:text-white' }}">
+                <a href="{{ route('admin.queue') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.queue') ? 'bg-white text-amber-800 shadow-lg shadow-amber-900/10' : 'text-stone-800 hover:bg-white/70 hover:text-amber-900' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2h-3V3m0 0L9 3m6 0v2M4 7h16M5 7l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12" /></svg>
                     <span>Antrean Verifikasi</span>
                 </a>
 
-                <a href="{{ route('admin.history') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.history') ? 'bg-white text-pln-900 shadow-lg shadow-black/10' : 'text-blue-100 hover:bg-white/10 hover:text-white' }}">
+                <a href="{{ route('admin.history') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition {{ request()->routeIs('admin.history') ? 'bg-white text-amber-800 shadow-lg shadow-amber-900/10' : 'text-stone-800 hover:bg-white/70 hover:text-amber-900' }}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-3-6.708" /></svg>
                     <span>Riwayat Evaluasi</span>
                 </a>
             </nav>
 
             <div class="mt-auto p-4 border-t border-white/10 space-y-3">
-                <a href="{{ route('admin.users') }}" class="block rounded-xl bg-white/10 px-3 py-2 text-xs text-blue-100 hover:bg-white/15 hover:text-white font-semibold">Manajemen User</a>
+                <a href="{{ route('admin.users') }}" class="block rounded-xl bg-white/70 px-3 py-2 text-xs text-stone-800 hover:bg-white hover:text-amber-900 font-semibold">Manajemen User</a>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button type="submit" class="w-full py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold shadow-lg shadow-rose-950/20 transition">Logout</button>
@@ -98,15 +98,15 @@
 
     <div x-show="sidebarOpen" x-transition class="fixed inset-0 z-50 lg:hidden" style="display: none;">
         <div class="absolute inset-0 bg-black/40" @click="sidebarOpen = false"></div>
-        <aside class="absolute left-0 top-0 h-full w-72 bg-white border-r border-stone-200 p-4 space-y-2">
+        <aside class="absolute left-0 top-0 h-full w-72 bg-white text-stone-900 border-r border-amber-200 p-4 space-y-2" style="background-image: url('{{ asset('images/batik kuning.png') }}'); background-size: 560px auto; background-position: center top;">
             <div class="flex items-center justify-between mb-2">
                 <h3 class="font-display font-extrabold text-pln-900">Menu Verifikator</h3>
                 <button @click="sidebarOpen = false" class="text-stone-500">✕</button>
             </div>
-            <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.dashboard') ? 'bg-pln-700 text-white' : 'text-stone-700 hover:bg-stone-100' }}">Dashboard</a>
-            <a href="{{ route('admin.queue') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.queue') ? 'bg-pln-700 text-white' : 'text-stone-700 hover:bg-stone-100' }}">Antrean Verifikasi</a>
-            <a href="{{ route('admin.history') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.history') ? 'bg-pln-700 text-white' : 'text-stone-700 hover:bg-stone-100' }}">Riwayat Evaluasi</a>
-            <a href="{{ route('admin.users') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.users') ? 'bg-pln-700 text-white' : 'text-stone-700 hover:bg-stone-100' }}">Manajemen User</a>
+            <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.dashboard') ? 'bg-white text-amber-800' : 'text-stone-700 hover:bg-white/70 hover:text-amber-900' }}">Dashboard</a>
+            <a href="{{ route('admin.queue') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.queue') ? 'bg-white text-amber-800' : 'text-stone-700 hover:bg-white/70 hover:text-amber-900' }}">Antrean Verifikasi</a>
+            <a href="{{ route('admin.history') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.history') ? 'bg-white text-amber-800' : 'text-stone-700 hover:bg-white/70 hover:text-amber-900' }}">Riwayat Evaluasi</a>
+            <a href="{{ route('admin.users') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.users') ? 'bg-white text-amber-800' : 'text-stone-700 hover:bg-white/70 hover:text-amber-900' }}">Manajemen User</a>
             <form action="{{ route('logout') }}" method="POST" class="pt-2">
                 @csrf
                 <button type="submit" class="w-full py-2 rounded-lg bg-rose-600 text-white text-sm font-bold">Logout</button>
