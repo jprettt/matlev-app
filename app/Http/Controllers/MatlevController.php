@@ -214,6 +214,7 @@ class MatlevController extends Controller
 
         $maturityLevel = MaturityLevel::findOrFail($levelId);
         $existingUpload = $maturityLevel->evidenceUpload;
+        $uploadPage = route('user.kriteria', ['level' => $maturityLevel->id]);
 
         if ($maturityLevel->level > 1) {
             $previousLevel = MaturityLevel::where('sub_criteria_id', $maturityLevel->sub_criteria_id)
@@ -222,12 +223,12 @@ class MatlevController extends Controller
                 ->first();
 
             if (! $previousLevel || ! $previousLevel->evidenceUpload) {
-                return redirect()->back()->with('error', 'Anda wajib mengunggah dokumen Level ' . ($maturityLevel->level - 1) . ' terlebih dahulu.');
+                return redirect($uploadPage)->with('error', 'Anda wajib mengunggah dokumen Level ' . ($maturityLevel->level - 1) . ' terlebih dahulu.');
             }
         }
 
         if ($maturityLevel->evidenceUpload && $maturityLevel->evidenceUpload->status !== 'rejected') {
-            return redirect()->back()->with('error', 'Gagal: Slot indikator kematangan ini sudah diisi oleh ' . $maturityLevel->evidenceUpload->user->name);
+            return redirect($uploadPage)->with('error', 'Gagal: Slot indikator kematangan ini sudah diisi oleh ' . $maturityLevel->evidenceUpload->user->name);
         }
 
         $isRevision = (bool) ($existingUpload && $existingUpload->status === 'rejected');
@@ -305,9 +306,9 @@ class MatlevController extends Controller
                 'occurred_at' => $upload->uploaded_at ?? now(),
             ]);
 
-            return redirect()->back()->with('success', 'Bukti dokumen PDF berhasil diunggah dan sedang menunggu penilaian!');
+            return redirect($uploadPage)->with('success', 'Bukti dokumen PDF berhasil diunggah dan sedang menunggu penilaian!');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            return redirect($uploadPage)->with('error', $e->getMessage());
         }
     }
 

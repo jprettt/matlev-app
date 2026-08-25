@@ -163,16 +163,39 @@ class RoleAccessTest extends TestCase
 
         $this->actingAs($user)
             ->post(route('matlev.upload', $levelOne), ['pdf_file' => UploadedFile::fake()->create('level-1.pdf', 10, 'application/pdf')])
-            ->assertSessionHas('success');
+            ->assertSessionHas('success')
+            ->assertRedirect(route('user.kriteria', ['level' => $levelOne->id]));
 
         $this->actingAs($user)
             ->post(route('matlev.upload', $levelTwo), ['pdf_file' => UploadedFile::fake()->create('level-2.pdf', 10, 'application/pdf')])
-            ->assertSessionHas('success');
+            ->assertSessionHas('success')
+            ->assertRedirect(route('user.kriteria', ['level' => $levelTwo->id]));
 
         $this->assertDatabaseHas('evidence_uploads', [
             'maturity_level_id' => $levelTwo->id,
             'original_filename' => 'level-2.pdf',
         ]);
+    }
+
+    public function test_pending_evidence_does_not_increase_subcriteria_score(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $criteria = Kriteria::create(['code' => 'K1', 'title' => 'Kriteria']);
+        $subcriteria = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K1.1', 'title' => 'Sub Kriteria']);
+        $level = MaturityLevel::create(['sub_criteria_id' => $subcriteria->id, 'level' => 2, 'evidence_requirement' => 'PDF']);
+        EvidenceUpload::create([
+            'maturity_level_id' => $level->id,
+            'user_id' => $user->id,
+            'file_path' => 'evidence_pdfs/pending.pdf',
+            'original_filename' => 'pending.pdf',
+            'status' => 'pending',
+            'uploaded_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->get(route('user.kriteria', ['level' => $level->id]));
+
+        $response->assertOk();
+        $this->assertMatchesRegularExpression('/Nilai SK:.*?font-extrabold[^>]*>\s*0\s*</s', $response->getContent());
     }
 
     public function test_any_user_can_submit_rejected_revision_and_old_file_is_kept(): void

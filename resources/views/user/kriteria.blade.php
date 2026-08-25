@@ -123,7 +123,7 @@
                     @forelse($criteria->subKriterias as $sub)
                         @php
                             $subScore = $sub->maturityLevels
-                                ->filter(fn ($level) => $level->evidenceUpload !== null)
+                                ->filter(fn ($level) => $level->evidenceUpload?->status === 'approved')
                                 ->max('level') ?? 0;
                         @endphp
                         <div class="bg-gradient-to-br from-amber-50/70 via-white to-cyan-50/70 p-5 rounded-2xl border border-blue-100 shadow-sm space-y-4">

@@ -48,7 +48,7 @@
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-blue-50/40 to-cyan-50/30 text-stone-800 font-sans" x-data="{ sidebarOpen: false }">
     <div class="min-h-screen flex">
-        <aside class="w-72 bg-white text-stone-900 hidden lg:flex lg:flex-col sticky top-0 h-screen shadow-2xl shadow-amber-900/20" style="background-image: url('{{ asset('images/batik kuning.png') }}'); background-size: 560px auto; background-position: center top;">
+        <aside class="w-72 bg-white text-stone-900 hidden lg:flex lg:flex-col sticky top-0 h-screen shadow-2xl shadow-amber-900/20" style="background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)), url('{{ asset('images/batik kuning.png') }}'); background-size: auto, 560px auto; background-position: center, center top;">
             <div class="px-6 py-6 border-b border-white/10">
                 <p class="text-[11px] uppercase tracking-[0.2em] text-amber-800 font-bold">Verifikator Workspace</p>
                 <h1 class="text-xl font-extrabold font-display text-stone-900 mt-1">PLN MATLEV Admin</h1>
@@ -98,7 +98,7 @@
 
     <div x-show="sidebarOpen" x-transition class="fixed inset-0 z-50 lg:hidden" style="display: none;">
         <div class="absolute inset-0 bg-black/40" @click="sidebarOpen = false"></div>
-        <aside class="absolute left-0 top-0 h-full w-72 bg-white text-stone-900 border-r border-amber-200 p-4 space-y-2" style="background-image: url('{{ asset('images/batik kuning.png') }}'); background-size: 560px auto; background-position: center top;">
+        <aside class="absolute left-0 top-0 h-full w-72 bg-white text-stone-900 border-r border-amber-200 p-4 space-y-2" style="background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)), url('{{ asset('images/batik kuning.png') }}'); background-size: auto, 560px auto; background-position: center, center top;">
             <div class="flex items-center justify-between mb-2">
                 <h3 class="font-display font-extrabold text-pln-900">Menu Verifikator</h3>
                 <button @click="sidebarOpen = false" class="text-stone-500">✕</button>
