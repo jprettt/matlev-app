@@ -6,7 +6,7 @@
 <div class="space-y-8">
 
     <!-- PAGE HEADER (FORE STYLE) -->
-    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div class="w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 pt-6 sm:pt-10 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div class="space-y-1">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-bold">
                 <span>❌ TINDAK LANJUT EVALUASI</span>
@@ -29,6 +29,7 @@
         @endif
     </div>
 
+    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <!-- LIST REVISION ITEMS -->
     @if(count($rejectedItems) > 0)
         <div class="space-y-4">
@@ -159,6 +160,7 @@
             </div>
         </div>
     @endif
+    </div>
 
 </div>
 @endsection

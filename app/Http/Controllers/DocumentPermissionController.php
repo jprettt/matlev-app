@@ -6,6 +6,7 @@ use App\Models\DocumentPermissionRequest;
 use App\Models\EvidenceRevision;
 use App\Models\EvidenceUpload;
 use App\Models\ActivityLog;
+use App\Models\AppNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ class DocumentPermissionController extends Controller
         ]);
 
         abort_if($upload->user_id === Auth::id(), 422, 'Pemilik dokumen tidak perlu meminta izin.');
-        abort_if($upload->status === 'approved', 422, 'Dokumen yang sudah disetujui tidak memerlukan permintaan izin edit.');
+        abort_if($upload->status === 'approved', 422, 'Dokumen yang sudah disetujui tidak memerlukan permintaan izin mengganti.');
         $permissionRequest = DocumentPermissionRequest::updateOrCreate(
             [
                 'evidence_upload_id' => $upload->id,
@@ -40,6 +41,16 @@ class DocumentPermissionController extends Controller
             'filename' => $upload->original_filename,
             'status' => $permissionRequest->status,
             'occurred_at' => now(),
+        ]);
+
+        AppNotification::create([
+            'recipient_id' => $upload->user_id,
+            'type' => 'permission_request',
+            'title' => 'Permintaan izin dokumen',
+            'message' => Auth::user()->name . ' meminta izin mengganti ' . $upload->original_filename . '.',
+            'document_id' => $upload->id,
+            'request_id' => $permissionRequest->id,
+            'target_url' => route('user.kriteria', ['level' => $upload->maturity_level_id]) . '#level-' . $upload->maturity_level_id,
         ]);
 
         return back()->with('success', 'Permintaan izin telah dikirim kepada pemilik dokumen.');
@@ -68,6 +79,16 @@ class DocumentPermissionController extends Controller
             'filename' => $permissionRequest->evidenceUpload->original_filename,
             'status' => $validated['status'],
             'occurred_at' => $permissionRequest->responded_at,
+        ]);
+
+        AppNotification::create([
+            'recipient_id' => $permissionRequest->requester_id,
+            'type' => 'permission_' . $validated['status'],
+            'title' => 'Permintaan izin ' . ($validated['status'] === 'approved' ? 'disetujui' : 'ditolak'),
+            'message' => Auth::user()->name . ' telah ' . ($validated['status'] === 'approved' ? 'menyetujui' : 'menolak') . ' permintaan Anda untuk mengganti ' . $permissionRequest->evidenceUpload->original_filename . '.',
+            'document_id' => $permissionRequest->evidence_upload_id,
+            'request_id' => $permissionRequest->id,
+            'target_url' => route('user.kriteria', ['level' => $permissionRequest->evidenceUpload->maturity_level_id]) . '#level-' . $permissionRequest->evidenceUpload->maturity_level_id,
         ]);
 
         return back()->with('success', 'Permintaan izin telah ' . ($validated['status'] === 'approved' ? 'disetujui.' : 'ditolak.'));

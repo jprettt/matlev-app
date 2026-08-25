@@ -54,6 +54,7 @@
         }
     </script>
     <style>
+        [x-cloak] { display: none !important; }
         body {
             background-color: #ffffff;
             color: #1e293b;
@@ -61,7 +62,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col antialiased selection:bg-pln-500 selection:text-white" x-data="{ mobileMenuOpen: false }">
+<body class="min-h-screen flex flex-col antialiased selection:bg-pln-500 selection:text-white" x-data="{ mobileMenuOpen: false, accountOpen: false, notificationOpen: false, logoutOpen: false }" @keydown.escape.window="accountOpen = false; notificationOpen = false; logoutOpen = false">
 
     <!-- 1. TOP NAVBAR (Blue PLN Theme) -->
     <header class="sticky top-0 z-50 shadow-lg bg-pln-900 bg-cover bg-center" style="background-image: linear-gradient(rgba(16, 50, 132, 0.86), rgba(16, 50, 132, 0.86)), url('{{ asset('images/bg topbar.png') }}');">
@@ -113,9 +114,41 @@
                     </a>
                 </nav>
 
-                <!-- Right Side: User & Logout -->
+                <!-- Right Side: Notifications & Account -->
                 <div class="hidden md:flex items-center space-x-3">
-                    <div class="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg text-xs">
+                    <div class="relative">
+                        <button type="button" @click="notificationOpen = !notificationOpen; accountOpen = false" class="relative w-10 h-10 inline-flex items-center justify-center rounded-lg text-white hover:bg-white/15 transition" aria-label="Notifikasi">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.4-1.6A2 2 0 0 1 18 14v-3a6 6 0 0 0-12 0v3a2 2 0 0 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0m6 0H9" /></svg>
+                            @if($navbarUnreadCount > 0)
+                                <span class="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-accent-400 text-pln-950 text-[9px] font-extrabold leading-4">{{ $navbarUnreadCount > 99 ? '99+' : $navbarUnreadCount }}</span>
+                            @endif
+                        </button>
+                        <div x-cloak x-show="notificationOpen" @click.outside="notificationOpen = false" x-transition class="absolute right-0 top-12 w-80 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden text-slate-800 z-50">
+                            <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                                <strong class="text-sm">Notifikasi</strong>
+                                @if($navbarUnreadCount > 0)
+                                    <form action="{{ route('notifications.read-all') }}" method="POST">@csrf<button class="text-[11px] font-bold text-pln-700 hover:text-pln-900">Tandai semua dibaca</button></form>
+                                @endif
+                            </div>
+                            <div class="max-h-96 overflow-y-auto">
+                                @forelse($navbarNotifications as $notification)
+                                    <form action="{{ route('notifications.read', $notification->id) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-pln-50 {{ $notification->is_read ? 'bg-white' : 'bg-pln-50/70' }}">
+                                            <div class="flex gap-2"><span class="mt-1 w-2 h-2 rounded-full shrink-0 {{ $notification->is_read ? 'bg-slate-300' : 'bg-pln-600' }}"></span><span class="text-xs font-bold">{{ $notification->title }}</span></div>
+                                            <p class="text-[11px] text-slate-600 mt-1 ml-4">{{ $notification->message }}</p>
+                                            <p class="text-[10px] text-slate-400 mt-1 ml-4">{{ $notification->created_at->diffForHumans() }}</p>
+                                        </button>
+                                    </form>
+                                @empty
+                                    <p class="px-4 py-8 text-center text-xs text-slate-500">Tidak ada notifikasi</p>
+                                @endforelse
+                            </div>
+                            <a href="{{ route('notifications.history') }}" @click="notificationOpen = false" class="block border-t border-slate-200 px-4 py-3 text-center text-xs font-bold text-pln-700 hover:bg-pln-50">Riwayat Notifikasi &rarr;</a>
+                        </div>
+                    </div>
+                    <div class="relative">
+                    <button type="button" @click="accountOpen = !accountOpen; notificationOpen = false" class="translate-y-1 flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-lg text-xs hover:bg-white/15 transition">
                         <div class="w-6 h-6 rounded-full bg-accent-400 text-pln-900 flex items-center justify-center font-bold text-[10px]">
                             {{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}
                         </div>
@@ -123,15 +156,18 @@
                         <span class="bg-accent-400/20 text-accent-300 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">
                             {{ Auth::user()->role ?? 'User' }}
                         </span>
+                    </button>
+                    <div x-cloak x-show="accountOpen" @click.outside="accountOpen = false" x-transition class="absolute right-0 top-14 w-[170px] max-w-[calc(100vw-2rem)] h-[200px] bg-white border-2 border-violet-500 shadow-2xl overflow-hidden text-slate-900 z-50">
+                        <div class="absolute inset-x-0 top-0 h-[43%] bg-[#fff0e9]"><img src="{{ asset('images/batik kuning.png') }}" alt="" class="h-full w-full object-cover"></div>
+                        <div class="absolute left-1/2 top-[32%] -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-black border-4 border-white flex items-center justify-center text-white text-2xl font-normal shadow-md">{{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}</div>
+                        <div class="relative h-full px-2 pt-[60%] pb-2 flex flex-col items-center text-center">
+                            <p class="text-sm leading-tight font-normal font-display break-words max-w-full">{{ Auth::user()->name }}</p>
+                            <p class="text-[10px] text-slate-500 mt-2 truncate max-w-full">{{ Auth::user()->email }}</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5 uppercase">{{ Auth::user()->role }}</p>
+                            <button type="button" @click="logoutOpen = true; accountOpen = false" class="mt-auto self-end text-[11px] font-bold text-rose-600 hover:text-rose-700 transition">Log out &rarr;</button>
+                        </div>
                     </div>
-
-                    <form action="{{ route('logout') }}" method="POST" class="inline">
-                        @csrf
-                        <button type="submit" 
-                                class="px-3.5 py-1.5 text-xs font-bold text-white bg-white/10 border border-white/20 rounded-lg hover:bg-rose-600 hover:border-rose-600 transition-all duration-200">
-                            Logout
-                        </button>
-                    </form>
+                    </div>
                 </div>
 
                 <!-- Mobile Menu Button -->
@@ -159,15 +195,42 @@
                     <span class="bg-accent-400 text-pln-900 text-xs px-2 py-0.5 rounded-full font-bold">{{ $stats['totalRejected'] }}</span>
                 @endif
             </a>
-            <div class="pt-3 border-t border-pln-700 flex items-center justify-between">
-                <span class="text-xs text-pln-300 font-medium">{{ Auth::user()->name ?? 'User' }}</span>
-                <form action="{{ route('logout') }}" method="POST">
-                    @csrf
-                    <button type="submit" class="text-xs font-bold text-rose-400">Logout</button>
-                </form>
+            <div class="pt-3 border-t border-pln-700 flex items-center justify-between gap-2">
+                <button type="button" @click="notificationOpen = !notificationOpen" class="text-xs font-bold text-pln-100">Notifikasi @if($navbarUnreadCount > 0)<span class="ml-1 rounded-full bg-accent-400 text-pln-900 px-1.5 py-0.5">{{ $navbarUnreadCount }}</span>@endif</button>
+                <button type="button" @click="accountOpen = !accountOpen" class="text-xs font-bold text-pln-100">{{ Auth::user()->name ?? 'User' }}</button>
+            </div>
+            <div x-cloak x-show="notificationOpen" class="bg-white rounded-lg overflow-hidden text-slate-800">
+                <div class="flex items-center justify-between px-3 py-2 border-b border-slate-200"><strong class="text-xs">Notifikasi</strong>@if($navbarUnreadCount > 0)<form action="{{ route('notifications.read-all') }}" method="POST">@csrf<button class="text-[10px] font-bold text-pln-700">Tandai semua dibaca</button></form>@endif</div>
+                @forelse($navbarNotifications as $notification)
+                    <form action="{{ route('notifications.read', $notification->id) }}" method="POST">@csrf<button type="submit" class="w-full text-left px-3 py-2 border-b border-slate-100 {{ $notification->is_read ? '' : 'bg-pln-50' }}"><p class="text-[11px] font-bold">{{ $notification->title }}</p><p class="text-[10px] text-slate-500 mt-1">{{ $notification->message }}</p></button></form>
+                @empty
+                    <p class="px-3 py-5 text-center text-xs text-slate-500">Tidak ada notifikasi</p>
+                @endforelse
+                <a href="{{ route('notifications.history') }}" @click="notificationOpen = false" class="block border-t border-slate-200 px-3 py-2 text-center text-[11px] font-bold text-pln-700">Riwayat Notifikasi &rarr;</a>
+            </div>
+            <div x-cloak x-show="accountOpen" class="relative min-h-[190px] mt-1 bg-white border-2 border-violet-500 overflow-hidden text-slate-900">
+                <div class="absolute inset-x-0 top-0 h-[43%]"><img src="{{ asset('images/batik kuning.png') }}" alt="" class="h-full w-full object-cover"></div>
+                <div class="absolute left-1/2 top-[32%] -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-black border-4 border-white flex items-center justify-center text-white text-xl">{{ strtoupper(substr(Auth::user()->name ?? 'U', 0, 1)) }}</div>
+                <div class="relative min-h-[190px] px-2 pt-[60%] pb-2 flex flex-col items-center text-center">
+                    <p class="text-sm font-normal font-display leading-tight break-words">{{ Auth::user()->name }}</p>
+                    <p class="text-[10px] text-slate-500 mt-2 truncate max-w-full">{{ Auth::user()->email }}</p>
+                    <p class="text-[10px] text-slate-500 mt-0.5 uppercase">{{ Auth::user()->role }}</p>
+                    <button type="button" @click="logoutOpen = true; mobileMenuOpen = false" class="mt-auto self-end text-[11px] text-rose-600 font-bold">Log out &rarr;</button>
+                </div>
             </div>
         </div>
     </header>
+
+    <div x-cloak x-show="logoutOpen" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 px-4" role="dialog" aria-modal="true" aria-labelledby="logout-title">
+        <div @click.outside="logoutOpen = false" x-transition class="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
+            <h2 id="logout-title" class="text-lg font-extrabold text-slate-900">Konfirmasi Logout</h2>
+            <p class="text-sm text-slate-600 mt-2">Apakah Anda yakin ingin keluar dari akun?</p>
+            <div class="flex justify-end gap-2 mt-6">
+                <button type="button" @click="logoutOpen = false" class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-bold text-slate-600 hover:bg-slate-50">Batal</button>
+                <form action="{{ route('logout') }}" method="POST">@csrf<button type="submit" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold">Logout</button></form>
+            </div>
+        </div>
+    </div>
 
     <!-- 2. YELLOW ACCENT ANNOUNCEMENT BAR -->
     <div class="bg-accent-400 text-pln-900 py-2 px-4 text-xs sm:text-sm font-medium">

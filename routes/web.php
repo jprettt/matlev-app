@@ -5,6 +5,7 @@ use App\Http\Controllers\AtasanController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DocumentPermissionController;
 use App\Http\Controllers\MatlevController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
@@ -20,6 +21,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/revisi', [MatlevController::class, 'revisi'])->name('user.revisi');
         Route::get('/riwayat', [MatlevController::class, 'riwayat'])->name('user.history');
         Route::get('/panduan', [MatlevController::class, 'panduan'])->name('user.panduan');
+        Route::get('/notifications', [NotificationController::class, 'history'])->name('notifications.history');
+        Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
         Route::post('/upload/{maturityLevelId}', [MatlevController::class, 'upload'])->name('matlev.upload');
         Route::delete('/documents/revisions/{revision}', [DocumentPermissionController::class, 'destroyRevision'])->name('documents.revisions.delete');
         Route::post('/documents/{upload}/permission', [DocumentPermissionController::class, 'request'])->name('documents.permission.request');

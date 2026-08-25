@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EvidenceUpload;
 use App\Models\ActivityLog;
+use App\Models\AppNotification;
 use App\Models\Kriteria;
 use App\Models\MaturityLevel;
 use App\Models\Subkriteria;
@@ -149,6 +150,17 @@ class AdminController extends Controller
             'status' => $request->status,
             'occurred_at' => now(),
         ]);
+
+        if ($request->status !== 'pending') {
+            AppNotification::create([
+                'recipient_id' => $upload->user_id,
+                'type' => 'evaluation',
+                'title' => 'Berkas telah dinilai',
+                'message' => 'Admin telah menilai ' . $upload->original_filename . '. Status: ' . ($request->status === 'approved' ? 'Disetujui' : 'Perlu Revisi') . '.',
+                'document_id' => $upload->id,
+                'target_url' => route('user.kriteria', ['level' => $upload->maturity_level_id]) . '#level-' . $upload->maturity_level_id,
+            ]);
+        }
 
         $message = $request->status === 'approved'
             ? 'Dokumen berhasil disetujui.'

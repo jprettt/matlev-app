@@ -3,14 +3,30 @@
 @section('title', 'Daftar Kriteria & Upload Bukti')
 
 @section('content')
-<div class="space-y-8 pb-8" x-data="{ searchQuery: '' }">
+<style>
+    .criteria-tabs-scroll {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .criteria-tabs-scroll::-webkit-scrollbar {
+        display: none;
+    }
+</style>
+@php
+    $selectedLevelId = (int) request('level');
+    $selectedCriteria = $selectedLevelId
+        ? $criterias->first(fn ($candidate) => $candidate->subKriterias
+            ->flatMap(fn ($sub) => $sub->maturityLevels)
+            ->contains('id', $selectedLevelId))
+        : null;
+    $initialCriteriaId = $selectedCriteria?->id ?? $criterias->first()->id ?? '';
+@endphp
+<div class="space-y-8 pb-8" x-data="{ searchQuery: '', activeCriteria: '{{ $initialCriteriaId }}' }">
 
     <!-- PAGE HEADER (FORE STYLE) -->
-    <div class="w-full max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 px-6 sm:px-10 lg:px-12 pt-10 sm:pt-14 pb-6 text-stone-900">
+    <div class="w-full max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6 px-6 sm:px-10 lg:px-12 pt-6 sm:pt-10 pb-6 text-stone-900">
         <div class="space-y-1 max-w-2xl">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pln-50 text-pln-800 text-xs font-bold border border-pln-200">
-                <span>FORM PENGISIAN EVIDEN</span>
-            </div>
             <h1 class="text-2xl sm:text-3xl font-extrabold font-display mt-2">
                 Daftar Kriteria & Upload Dokumen
             </h1>
@@ -31,8 +47,26 @@
         </div>
     </div>
 
+    <!-- CRITERIA TABS -->
+    @if($criterias->isNotEmpty())
+        <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="criteria-tabs-scroll flex items-end gap-0 overflow-x-auto overflow-y-hidden border-b border-stone-300" role="tablist" aria-label="Daftar kriteria">
+                @foreach($criterias as $criteriaTab)
+                    <button type="button"
+                            @click="activeCriteria = '{{ $criteriaTab->id }}'"
+                            :class="activeCriteria === '{{ $criteriaTab->id }}' ? 'bg-white text-pln-900 border-stone-300 border-b-white -mb-px shadow-sm' : 'bg-stone-200 text-stone-600 border-stone-300 hover:bg-stone-100 hover:text-stone-900'"
+                            class="shrink-0 rounded-t-xl border border-b-0 px-5 sm:px-7 py-3 text-sm font-bold transition-colors"
+                            role="tab"
+                            :aria-selected="activeCriteria === '{{ $criteriaTab->id }}'">
+                        {{ $criteriaTab->code ?? $criteriaTab->kode ?? 'Kriteria' }}
+                    </button>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <!-- LIST CRITERIAS -->
-    <div class="space-y-6">
+    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 -mt-8">
         @forelse($criterias as $criteria)
             @php
                 $critSlots = 0;
@@ -53,8 +87,9 @@
                 $criteriaFilterText = strtolower(($criteria->code ?? '') . ' ' . ($criteria->title ?? $criteria->nama ?? ''));
             @endphp
 
-            <div class="bg-white rounded-3xl border border-stone-200 shadow-lg shadow-slate-900/5 overflow-hidden"
-                 x-show="searchQuery === '' || '{{ addslashes($criteriaFilterText) }}'.includes(searchQuery.toLowerCase())">
+            <div class="bg-white rounded-3xl border border-stone-300 shadow-lg shadow-slate-900/5 overflow-hidden"
+                  x-show="activeCriteria === '{{ $criteria->id }}' && (searchQuery === '' || '{{ addslashes($criteriaFilterText) }}'.includes(searchQuery.toLowerCase()))"
+                  role="tabpanel">
                 
                 <!-- Criteria Header -->
                 <div class="bg-gradient-to-r from-slate-100 via-blue-50 to-cyan-50 p-5 sm:p-6 border-b border-blue-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -277,27 +312,50 @@
                                                 @php
                                                     $document = $lvl->evidenceUpload;
                                                     $myPermission = $document->permissionRequests->first(fn ($permission) => (int) $permission->requester_id === (int) Auth::id() && $permission->action === 'edit' && $permission->status === 'approved' && is_null($permission->used_at));
+                                                    $ownerPendingPermission = $document->permissionRequests->first(fn ($permission) => (int) $permission->owner_id === (int) Auth::id() && $permission->action === 'edit' && $permission->status === 'pending');
                                                     $isOwner = (int) $document->user_id === (int) Auth::id();
-                                                    $canEdit = $isOwner || ($myPermission && $myPermission->action === 'edit');
+                                                    $canReplace = $isOwner || $myPermission;
                                                 @endphp
                                                 <div class="mt-2 pt-2 border-t border-stone-100 space-y-1.5">
-                                                    @if($canEdit && $document->status !== 'approved')
+                                                    @if($ownerPendingPermission)
+                                                        <div class="rounded-lg bg-amber-50 border border-amber-200 p-2 space-y-2">
+                                                            <p class="text-[10px] text-amber-900 font-semibold"><strong>{{ $ownerPendingPermission->requester->name }}</strong> meminta izin mengganti file ini.</p>
+                                                            <div class="flex gap-2">
+                                                                <form action="{{ route('documents.permission.respond', $ownerPendingPermission) }}" method="POST" class="flex-1">
+                                                                    @csrf
+                                                                    <input type="hidden" name="status" value="approved">
+                                                                    <button class="w-full text-[10px] font-bold py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Setujui</button>
+                                                                </form>
+                                                                <form action="{{ route('documents.permission.respond', $ownerPendingPermission) }}" method="POST" class="flex-1">
+                                                                    @csrf
+                                                                    <input type="hidden" name="status" value="rejected">
+                                                                    <button class="w-full text-[10px] font-bold py-1.5 rounded-lg bg-rose-600 text-white hover:bg-rose-700">Tolak</button>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    @endif
+                                                    @if($canReplace && $document->status !== 'approved')
                                                         @if($myPermission)
-                                                            <p class="text-[10px] text-emerald-700 font-bold">Izin pemilik disetujui untuk menghapus dokumen.</p>
+                                                            <p class="text-[10px] text-emerald-700 font-bold">Izin pemilik disetujui untuk mengganti dokumen.</p>
                                                         @endif
                                                         <form action="{{ route('documents.delete', $document) }}" method="POST" onsubmit="return confirm('Hapus dokumen ini? Setelah dihapus, Anda dapat mengunggah file baru.')">
                                                                 @csrf
                                                                 @method('DELETE')
                                                                 <button class="w-full text-[10px] font-bold py-1.5 px-2 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100">Hapus Dokumen</button>
                                                         </form>
-                                                    @elseif($document->status !== 'approved' && $document->permissionRequests->first(fn ($permission) => (int) $permission->requester_id === (int) Auth::id() && $permission->action === 'edit' && $permission->status === 'pending'))
-                                                        <p class="text-[10px] text-amber-700 font-semibold">Permintaan izin sedang menunggu persetujuan pemilik.</p>
                                                     @elseif($document->status !== 'approved')
+                                                        @php
+                                                            $pendingReplace = $document->permissionRequests->first(fn ($permission) => (int) $permission->requester_id === (int) Auth::id() && $permission->action === 'edit' && $permission->status === 'pending');
+                                                        @endphp
+                                                        @if($pendingReplace)
+                                                            <p class="text-[10px] text-amber-700 font-semibold">Permintaan izin mengganti sedang menunggu persetujuan pemilik.</p>
+                                                        @else
                                                         <form action="{{ route('documents.permission.request', $document) }}" method="POST">
                                                                 @csrf
                                                                 <input type="hidden" name="action" value="edit">
-                                                                <button class="w-full text-[10px] font-bold py-1.5 px-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100">Meminta Izin Edit</button>
+                                                                <button class="w-full text-[10px] font-bold py-1.5 px-1 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100">Meminta Izin Mengganti</button>
                                                         </form>
+                                                        @endif
                                                     @endif
                                                 </div>
                                             @endif

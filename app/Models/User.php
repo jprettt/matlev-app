@@ -45,4 +45,9 @@ class User extends Authenticatable
     {
         return $this->role === 'atasan';
     }
+
+    public function appNotifications()
+    {
+        return $this->hasMany(AppNotification::class, 'recipient_id');
+    }
 }

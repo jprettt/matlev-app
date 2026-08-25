@@ -3,8 +3,13 @@
 @section('title', 'Riwayat Aktivitas')
 
 @section('content')
-<div class="space-y-8" x-data="{ activityFilter: 'all', actorFilter: 'all' }">
-    <div class="bg-white p-6 sm:p-8 rounded-3xl border border-stone-200 shadow-sm">
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
+<div class="space-y-8" x-data="{ activityFilter: 'all', actorFilter: 'all', openFilter: null }" @click.window="openFilter = null">
+    <div class="w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 pt-6 sm:pt-10 pb-6">
         <div class="space-y-1 mb-6">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-100 text-stone-800 text-xs font-bold">
                 <span>LOG AKTIVITAS</span>
@@ -13,43 +18,68 @@
             <p class="text-stone-600 text-xs sm:text-sm">Pantau seluruh aktivitas upload, izin, dan penilaian dokumen.</p>
         </div>
 
-        <div class="inline-flex flex-wrap gap-1.5 bg-stone-100 p-1.5 rounded-2xl border border-stone-200 text-xs w-fit max-w-full">
-            @foreach([
-                'all' => 'Semua Aktivitas',
-                'upload' => 'Upload',
-                'revision_upload' => 'Upload File Revisi',
-                'permission_request' => 'Minta Izin',
-                'permission_granted' => 'Mengizinkan',
-                'evaluation' => 'Menilai',
-                'delete' => 'Menghapus',
-            ] as $type => $label)
-                <button type="button" @click="activityFilter = '{{ $type }}'"
-                        :class="activityFilter === '{{ $type }}' ? 'bg-pln-900 text-white font-bold' : 'text-stone-700 hover:bg-white hover:text-stone-900'"
-                        class="px-3.5 py-2 rounded-xl transition-all duration-200">
-                    {{ $label }}
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+            <div class="relative" @click.stop>
+                <button type="button" @click.stop="openFilter = openFilter === 'activity' ? null : 'activity'"
+                        class="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-stone-100 px-3.5 py-2.5 font-bold text-stone-700 hover:bg-stone-200 transition-colors">
+                    <svg class="h-4 w-4 text-pln-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 5h16l-6 7v5l-4 2v-7L4 5z" />
+                    </svg>
+                    <span>Aktivitas:</span>
+                    <span class="text-pln-900" x-text="{ all: 'Semua Aktivitas', upload: 'Upload', revision_upload: 'Upload File Revisi', permission_request: 'Minta Izin', permission_granted: 'Mengizinkan', evaluation: 'Menilai', delete: 'Menghapus' }[activityFilter]"></span>
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
                 </button>
-            @endforeach
-        </div>
+                <div x-show="openFilter === 'activity'" x-transition class="absolute left-0 z-20 mt-2 w-52 rounded-xl border border-stone-200 bg-white p-1.5 shadow-xl" x-cloak>
+                    @foreach([
+                        'all' => 'Semua Aktivitas',
+                        'upload' => 'Upload',
+                        'revision_upload' => 'Upload File Revisi',
+                        'permission_request' => 'Minta Izin',
+                        'permission_granted' => 'Mengizinkan',
+                        'evaluation' => 'Menilai',
+                        'delete' => 'Menghapus',
+                    ] as $type => $label)
+                        <button type="button" @click.stop="activityFilter = '{{ $type }}'; openFilter = null"
+                                class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-stone-700 hover:bg-stone-100 transition-colors">
+                            <span>{{ $label }}</span>
+                            <span x-show="activityFilter === '{{ $type }}'" class="font-bold text-pln-900">✓</span>
+                        </button>
+                    @endforeach
+                </div>
+            </div>
 
-        <div class="mt-3 inline-flex flex-wrap gap-1.5 bg-stone-100 p-1.5 rounded-2xl border border-stone-200 text-xs w-fit max-w-full">
-            @foreach([
-                'all' => 'Semua Aktor',
-                'mine' => 'Saya',
-                'team' => 'Tim',
-            ] as $actorType => $label)
-                <button type="button" @click="actorFilter = '{{ $actorType }}'"
-                        :class="actorFilter === '{{ $actorType }}' ? 'bg-emerald-700 text-white font-bold' : 'text-stone-700 hover:bg-white hover:text-stone-900'"
-                        class="px-3.5 py-2 rounded-xl transition-all duration-200">
-                    {{ $label }}
+            <div class="relative" @click.stop>
+                <button type="button" @click.stop="openFilter = openFilter === 'actor' ? null : 'actor'"
+                        class="inline-flex items-center gap-2 rounded-xl border border-stone-300 bg-stone-100 px-3.5 py-2.5 font-bold text-stone-700 hover:bg-stone-200 transition-colors">
+                    <svg class="h-4 w-4 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 12a4 4 0 100-8 4 4 0 000 8zm-7 8a7 7 0 0114 0" />
+                    </svg>
+                    <span>Aktor:</span>
+                    <span class="text-emerald-700" x-text="{ all: 'Semua Aktor', mine: 'Saya', team: 'Tim' }[actorFilter]"></span>
+                    <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>
                 </button>
-            @endforeach
+                <div x-show="openFilter === 'actor'" x-transition class="absolute left-0 z-20 mt-2 w-44 rounded-xl border border-stone-200 bg-white p-1.5 shadow-xl" x-cloak>
+                    @foreach([
+                        'all' => 'Semua Aktor',
+                        'mine' => 'Saya',
+                        'team' => 'Tim',
+                    ] as $actorType => $label)
+                        <button type="button" @click.stop="actorFilter = '{{ $actorType }}'; openFilter = null"
+                                class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-stone-700 hover:bg-stone-100 transition-colors">
+                            <span>{{ $label }}</span>
+                            <span x-show="actorFilter === '{{ $actorType }}'" class="font-bold text-emerald-700">✓</span>
+                        </button>
+                    @endforeach
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs sm:text-sm text-stone-700">
-                <thead class="bg-stone-100/90 text-stone-600 uppercase text-[11px] font-bold tracking-wider border-b border-stone-200">
+    <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs sm:text-sm text-stone-700">
+                <thead class="bg-stone-100/90 text-stone-600 uppercase text-[11px] font-bold tracking-wider border-b border-stone-200 text-center">
                     <tr>
                         <th class="p-4 sm:px-6">Waktu</th>
                         <th class="p-4 sm:px-6">Aktor</th>
@@ -62,17 +92,18 @@
                     @forelse($activityLogs as $log)
                         @php
                             $actor = $log->actor->name ?? 'User';
+                            $actorRole = $log->actor->role ?? 'user';
                             $requester = $log->targetUser->name ?? 'user';
                             $filename = $log->filename ?? 'dokumen';
-                            $description = match ($log->activity_type) {
-                                'upload' => "$actor mengupload file $filename",
-                                'revision_upload' => "$actor mengupload file revisi $filename",
-                                'permission_request' => "$actor meminta izin ganti file $filename",
-                                'permission_granted' => "$actor mengizinkan $requester untuk mengganti file $filename",
-                                'permission_rejected' => "$actor menolak permintaan ganti file $filename",
-                                'evaluation' => 'Verifikator ' . ($log->status === 'approved' ? 'menyetujui' : 'menolak') . " file $filename",
-                                'delete' => "$actor menghapus file $filename",
-                                default => "$actor melakukan aktivitas pada file $filename",
+                            [$descriptionBeforeFile, $descriptionAfterFile] = match ($log->activity_type) {
+                                'upload' => ["$actor mengupload file", ''],
+                                'revision_upload' => ["$actor mengupload file revisi", ''],
+                                'permission_request' => ["$actor meminta izin ganti file", ''],
+                                'permission_granted' => ["$actor mengizinkan $requester untuk mengganti file", ''],
+                                'permission_rejected' => ["$actor menolak permintaan ganti file", ''],
+                                'evaluation' => ['Verifikator ' . ($log->status === 'approved' ? 'menyetujui' : 'menolak') . ' file', ''],
+                                'delete' => ["$actor menghapus file", ''],
+                                default => ["$actor melakukan aktivitas pada file", ''],
                             };
                             $typeForFilter = in_array($log->activity_type, ['permission_request', 'permission_rejected'], true)
                                 ? 'permission_request'
@@ -91,12 +122,20 @@
                                 <span class="font-bold text-stone-800 block">{{ $log->occurred_at?->timezone(config('app.timezone'))->format('d M Y') ?? '-' }}</span>
                                 <span class="text-[11px] text-stone-500">{{ $log->occurred_at?->timezone(config('app.timezone'))->format('H:i') ?? '-' }} WITA</span>
                             </td>
-                            <td class="p-4 sm:px-6 font-semibold text-stone-800 whitespace-nowrap">{{ $actor }}</td>
+                            <td class="p-4 sm:px-6 text-center whitespace-nowrap">
+                                <span class="font-bold {{ $actorRole === 'user' ? 'text-pln-700' : 'text-rose-700' }}">
+                                    {{ $actor }}
+                                </span>
+                            </td>
                             <td class="p-4 sm:px-6 text-stone-800">{{ $log->maturityLevel->subkriteria->title ?? '-' }}</td>
                             <td class="p-4 sm:px-6 whitespace-nowrap">
                                 <span class="px-2.5 py-1 bg-stone-100 text-pln-900 font-extrabold text-xs rounded-full border border-stone-200">Lvl {{ $log->maturityLevel->level ?? '-' }}</span>
                             </td>
-                            <td class="p-4 sm:px-6 text-stone-700 min-w-[280px]">{{ $description }}</td>
+                            <td class="p-4 sm:px-6 text-stone-700 min-w-[280px]">
+                                {{ $descriptionBeforeFile }}
+                                <span class="font-bold text-emerald-700">{{ $filename }}</span>
+                                {{ $descriptionAfterFile }}
+                            </td>
                         </tr>
                     @empty
                         <tr>
@@ -104,7 +143,8 @@
                         </tr>
                     @endforelse
                 </tbody>
-            </table>
+                </table>
+            </div>
         </div>
     </div>
 </div>

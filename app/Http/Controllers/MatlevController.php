@@ -21,7 +21,7 @@ class MatlevController extends Controller
      */
     private function getStatsAndData()
     {
-        $criterias = Kriteria::with(['subKriterias.maturityLevels.evidenceUpload.user', 'subKriterias.maturityLevels.evidenceUpload.permissionRequests', 'subKriterias.maturityLevels.evidenceUpload.revisions.user', 'subKriterias.maturityLevels.evidenceUpload.revisions.deletedBy'])->get();
+        $criterias = Kriteria::with(['subKriterias.maturityLevels.evidenceUpload.user', 'subKriterias.maturityLevels.evidenceUpload.permissionRequests.requester', 'subKriterias.maturityLevels.evidenceUpload.revisions.user', 'subKriterias.maturityLevels.evidenceUpload.revisions.deletedBy'])->get();
         $pendingPermissionRequests = DocumentPermissionRequest::with(['evidenceUpload.maturityLevel.subkriteria.kriteria', 'requester'])
             ->where('owner_id', Auth::id())
             ->where('action', 'edit')
