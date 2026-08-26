@@ -61,7 +61,7 @@
                             </p>
                         </div>
 
-                        <!-- Catatan Evaluator / Admin -->
+                        <!-- Catatan verifikator -->
                         <div class="bg-rose-50 border border-rose-200 p-3.5 rounded-2xl space-y-1">
                             <div class="flex items-center gap-1.5 text-xs font-bold text-rose-900">
                                 <span>⚠️</span>

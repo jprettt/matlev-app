@@ -53,7 +53,7 @@
 
             <div class="bg-cream-100 p-5 rounded-2xl border border-stone-200 space-y-2 relative">
                 <span class="w-8 h-8 rounded-full bg-amber-600 text-white font-extrabold text-xs flex items-center justify-center font-display">3</span>
-                <h3 class="font-bold text-stone-900 text-sm">Penilaian Admin</h3>
+                <h3 class="font-bold text-stone-900 text-sm">Penilaian Verifikator</h3>
                 <p class="text-xs text-stone-600 leading-relaxed">
                     Tim penilai/evaluator K3 memeriksa keabsahan dan relevansi dokumen yang diunggah.
                 </p>
@@ -181,7 +181,7 @@
                         <span x-text="activeFaq === 2 ? '−' : '+'" class="text-base font-bold text-fore-900"></span>
                     </button>
                     <div x-show="activeFaq === 2" x-collapse class="p-3.5 bg-white text-stone-600 leading-relaxed border-t border-stone-200">
-                        Evaluasi berkas dilakukan oleh tim asesor/admin K3 secara berkala. Status dokumen dapat dipantau langsung pada menu <strong>"Riwayat Aktivitas"</strong> atau <strong>"Beranda"</strong>.
+                        Evaluasi berkas dilakukan oleh tim verifikator K3 secara berkala. Status dokumen dapat dipantau langsung pada menu <strong>"Riwayat Aktivitas"</strong> atau <strong>"Beranda"</strong>.
                     </div>
                 </div>
 

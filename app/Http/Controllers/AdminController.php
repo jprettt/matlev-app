@@ -8,11 +8,8 @@ use App\Models\AppNotification;
 use App\Models\Kriteria;
 use App\Models\MaturityLevel;
 use App\Models\Subkriteria;
-use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
@@ -21,16 +18,6 @@ class AdminController extends Controller
         $pendingCount = EvidenceUpload::where('status', 'pending')->count();
         $approvedCount = EvidenceUpload::where('status', 'approved')->count();
         $rejectedCount = EvidenceUpload::where('status', 'rejected')->count();
-
-        $completedUploads = EvidenceUpload::whereIn('status', ['approved', 'rejected'])
-            ->whereNotNull('uploaded_at')
-            ->get(['uploaded_at', 'updated_at']);
-
-        $avgSlaHours = round($completedUploads->avg(function ($upload) {
-            $uploadedAt = $upload->uploaded_at instanceof Carbon ? $upload->uploaded_at : Carbon::parse($upload->uploaded_at);
-            $completedAt = $upload->updated_at instanceof Carbon ? $upload->updated_at : Carbon::parse($upload->updated_at);
-            return max(0, $uploadedAt->diffInMinutes($completedAt) / 60);
-        }) ?? 0, 1);
 
         $recentPendingUploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
             ->where('status', 'pending')
@@ -42,7 +29,6 @@ class AdminController extends Controller
             'pendingCount',
             'approvedCount',
             'rejectedCount',
-            'avgSlaHours',
             'recentPendingUploads'
         ));
     }
@@ -95,39 +81,6 @@ class AdminController extends Controller
         return view('admin.history', compact('uploads', 'criteriaOptions'));
     }
 
-    public function users()
-    {
-        $users = User::orderBy('name')->get();
-
-        return view('admin.users', compact('users'));
-    }
-
-    public function updateUserRole(Request $request, $id)
-    {
-        $request->validate([
-            'role' => 'required|in:user,admin,atasan',
-        ]);
-
-        $user = User::findOrFail($id);
-        $user->update(['role' => $request->role]);
-
-        return back()->with('success', 'Hak akses pengguna berhasil diperbarui.');
-    }
-
-    public function resetPassword(Request $request, $id)
-    {
-        $request->validate([
-            'password' => 'required|string|min:6|confirmed',
-        ]);
-
-        $user = User::findOrFail($id);
-        $user->update([
-            'password' => Hash::make($request->password),
-        ]);
-
-        return back()->with('success', 'Password pengguna berhasil direset.');
-    }
-
     public function verifyUpload(Request $request, $id)
     {
         $request->validate([
@@ -156,7 +109,7 @@ class AdminController extends Controller
                 'recipient_id' => $upload->user_id,
                 'type' => 'evaluation',
                 'title' => 'Berkas telah dinilai',
-                'message' => 'Admin telah menilai ' . $upload->original_filename . '. Status: ' . ($request->status === 'approved' ? 'Disetujui' : 'Perlu Revisi') . '.',
+                'message' => 'Verifikator telah menilai ' . $upload->original_filename . '. Status: ' . ($request->status === 'approved' ? 'Disetujui' : 'Perlu Revisi') . '.',
                 'document_id' => $upload->id,
                 'target_url' => route('user.kriteria', ['level' => $upload->maturity_level_id]) . '#level-' . $upload->maturity_level_id,
             ]);

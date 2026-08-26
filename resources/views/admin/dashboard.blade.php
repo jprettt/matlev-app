@@ -14,7 +14,7 @@
 <div class="space-y-6">
     <div class="relative overflow-hidden rounded-3xl p-6 sm:p-8 shadow-xl shadow-amber-900/20 text-stone-900" style="background-color: #fff; background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)), url('{{ asset('images/batik kuning.png') }}'); background-size: auto, cover; background-position: center, center;">
         <div class="relative z-10">
-            <p class="text-xs uppercase tracking-[0.2em] text-amber-800 font-bold">Admin Master Data & Evaluator</p>
+            <p class="text-xs uppercase tracking-[0.2em] text-amber-800 font-bold">Ruang Kerja Verifikator</p>
             <h1 class="text-2xl sm:text-3xl font-extrabold font-display mt-2">Dashboard Verifikasi Dokumen</h1>
             <p class="text-sm text-stone-700 mt-2">Pantau beban kerja harian verifikator dan dokumen yang butuh tindak lanjut prioritas.</p>
         </div>
@@ -39,9 +39,9 @@
             <p class="text-xs text-rose-800 font-bold uppercase tracking-wide">Ditolak / Revisi</p>
             <p class="text-3xl font-extrabold text-rose-900 mt-2">{{ $rejectedCount }}</p>
         </div>
-        <div class="rounded-2xl border border-blue-200 bg-blue-50 p-5">
-            <p class="text-xs text-blue-800 font-bold uppercase tracking-wide">Rata-Rata SLA</p>
-            <p class="text-3xl font-extrabold text-blue-900 mt-2">{{ $avgSlaHours }} jam</p>
+        <div class="rounded-2xl border border-pln-200 bg-pln-50 p-5">
+            <p class="text-xs text-pln-800 font-bold uppercase tracking-wide">Total Dokumen</p>
+            <p class="text-3xl font-extrabold text-pln-950 mt-2">{{ $total }}</p>
         </div>
     </div>
 
@@ -81,7 +81,7 @@
                     <h2 class="text-lg font-extrabold font-display text-stone-900">Antrean Prioritas</h2>
                     <p class="text-xs text-stone-500">Daftar berkas pending paling lama untuk diproses terlebih dahulu.</p>
                 </div>
-                <a href="{{ route('admin.queue') }}" class="px-3 py-2 text-xs font-bold rounded-lg bg-pln-700 text-white hover:bg-pln-800 transition">Buka Antrean Verifikasi</a>
+                <a href="{{ route('admin.queue') }}" class="px-3 py-2 text-xs font-bold rounded-lg bg-pln-800 text-white hover:bg-pln-950 transition">Buka Antrean Verifikasi</a>
             </div>
 
             <div class="overflow-x-auto">

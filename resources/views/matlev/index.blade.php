@@ -131,7 +131,7 @@
                 <div class="w-full bg-slate-950 rounded-full h-4 p-0.5 border border-slate-800">
                     <div class="bg-cyan-500 h-3 rounded-full transition-all duration-500" style="width: {{ $globalPercent }}%"></div>
                 </div>
-                <p class="text-xs text-slate-400 mt-2">Total {{ $totalApproved }} dari {{ $totalSlots }} dokumen level telah divalidasi dan disetujui oleh admin.</p>
+                <p class="text-xs text-slate-400 mt-2">Total {{ $totalApproved }} dari {{ $totalSlots }} dokumen level telah divalidasi dan disetujui oleh verifikator.</p>
             </div>
 
             <!-- Widget Cards -->
@@ -152,7 +152,7 @@
                 </div>
                 <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
                     <div>
-                        <p class="text-xs text-slate-400">Disetujui Admin</p>
+                        <p class="text-xs text-slate-400">Disetujui Verifikator</p>
                         <p class="text-xl font-bold text-emerald-400">{{ $totalApproved }} File</p>
                     </div>
                     <div class="p-3 bg-emerald-950/50 rounded-lg text-emerald-400">✅</div>
@@ -303,7 +303,7 @@
         <div x-show="currentTab === 'revisions'" x-transition class="space-y-6">
             <div class="bg-slate-900 p-6 rounded-xl border border-slate-800">
                 <h2 class="text-lg font-semibold text-rose-400 mb-1">Daftar Dokumen yang Memerlukan Revisi</h2>
-                <p class="text-xs text-slate-400 mb-6">Berikut adalah dokumen yang ditolak oleh admin. Perbaiki file sesuai catatan lalu upload ulang pada form di bawah.</p>
+                <p class="text-xs text-slate-400 mb-6">Berikut adalah dokumen yang ditolak oleh verifikator. Perbaiki file sesuai catatan lalu upload ulang pada form di bawah.</p>
 
                 @forelse($rejectedItems as $item)
                     <div class="bg-slate-950 p-4 rounded-xl border border-rose-900/50 mb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -314,7 +314,7 @@
                             </div>
                             <p class="text-xs text-slate-300"><strong>Persyaratan:</strong> {{ $item['requirement'] }}</p>
                             <div class="bg-rose-950/40 p-2.5 rounded border border-rose-900/60 text-xs text-rose-200 mt-2">
-                                <strong>Catatan Penolakan Admin:</strong> {{ $item['upload']->rejection_note ?? 'Tidak ada catatan.' }}
+                                <strong>Catatan Penolakan Verifikator:</strong> {{ $item['upload']->rejection_note ?? 'Tidak ada catatan.' }}
                             </div>
                         </div>
 
@@ -357,7 +357,7 @@
                                 <th class="p-3">Level</th>
                                 <th class="p-3">Nama File</th>
                                 <th class="p-3">Status Terakhir</th>
-                                <th class="p-3">Catatan Admin</th>
+                                <th class="p-3">Catatan Verifikator</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-800/60">

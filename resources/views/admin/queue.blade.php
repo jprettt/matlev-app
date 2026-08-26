@@ -4,10 +4,10 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="bg-gradient-to-r from-pln-900 via-pln-800 to-cyan-700 rounded-3xl p-6 sm:p-7 shadow-lg shadow-pln-900/15 text-white">
-        <p class="text-xs uppercase tracking-[0.2em] text-cyan-200 font-bold">Pusat Verifikasi</p>
+    <div class="bg-gradient-to-r from-pln-600 via-pln-500 to-amber-300 rounded-3xl p-6 sm:p-7 shadow-lg shadow-amber-900/15 text-stone-950">
+        <p class="text-xs uppercase tracking-[0.2em] text-amber-950 font-bold">Pusat Verifikasi</p>
         <h1 class="text-2xl font-extrabold font-display mt-2">Antrean Verifikasi</h1>
-        <p class="text-sm text-blue-100 mt-1">Tinjau berkas pending berdasarkan tanggal upload dan kriteria K3.</p>
+        <p class="text-sm text-amber-950/80 mt-1">Tinjau berkas pending berdasarkan tanggal upload dan kriteria K3.</p>
     </div>
 
     @if(session('success'))

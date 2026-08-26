@@ -18,17 +18,17 @@
                 extend: {
                     colors: {
                         pln: {
-                            50: '#eff6ff',
-                            100: '#dbeafe',
-                            200: '#bfdbfe',
-                            300: '#93c5fd',
-                            400: '#60a5fa',
-                            500: '#3b82f6',
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                            800: '#1e40af',
-                            900: '#1e3a8a',
-                            950: '#172554'
+                            50: '#fffde7',
+                            100: '#fff9c4',
+                            200: '#fff59d',
+                            300: '#fff176',
+                            400: '#ffeb3b',
+                            500: '#fdd835',
+                            600: '#f9c900',
+                            700: '#d9a900',
+                            800: '#a87800',
+                            900: '#6f4f00',
+                            950: '#3f2d00'
                         },
                         accent: {
                             100: '#fef3c7',
@@ -46,13 +46,14 @@
         }
     </script>
 </head>
-<body class="bg-gradient-to-br from-slate-50 via-blue-50/40 to-cyan-50/30 text-stone-800 font-sans" x-data="{ sidebarOpen: false }">
+<body class="bg-white text-stone-800 font-sans" x-data="{ sidebarOpen: false }">
     <div class="min-h-screen flex">
         <aside class="w-72 bg-white text-stone-900 hidden lg:flex lg:flex-col sticky top-0 h-screen shadow-2xl shadow-amber-900/20" style="background-image: linear-gradient(rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.18)), url('{{ asset('images/batik kuning.png') }}'); background-size: auto, 560px auto; background-position: center, center top;">
-            <div class="px-6 py-6 border-b border-white/10">
-                <p class="text-[11px] uppercase tracking-[0.2em] text-amber-800 font-bold">Verifikator Workspace</p>
-                <h1 class="text-xl font-extrabold font-display text-stone-900 mt-1">PLN MATLEV Admin</h1>
-                <div class="mt-4 h-1 w-16 rounded-full bg-amber-400"></div>
+            <div class="px-6 py-5 border-b border-amber-200/80 bg-white/90">
+                <img src="{{ asset('images/pln transparan.png') }}" alt="Logo PLN" class="h-12 w-auto object-contain object-left">
+                <p class="text-[11px] uppercase tracking-[0.2em] text-amber-800 font-bold mt-4">Ruang Kerja Verifikator</p>
+                <h1 class="text-xl font-extrabold font-display text-stone-900 mt-1">PLN MATLEV</h1>
+                <div class="mt-4 h-1 w-16 rounded-full bg-pln-500"></div>
             </div>
 
             <nav class="p-4 space-y-1.5">
@@ -74,7 +75,6 @@
             </nav>
 
             <div class="mt-auto p-4 border-t border-white/10 space-y-3">
-                <a href="{{ route('admin.users') }}" class="block rounded-xl bg-white/70 px-3 py-2 text-xs text-stone-800 hover:bg-white hover:text-amber-900 font-semibold">Manajemen User</a>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button type="submit" class="w-full py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold shadow-lg shadow-rose-950/20 transition">Logout</button>
@@ -84,7 +84,7 @@
 
         <div class="flex-1 min-w-0">
             <header class="lg:hidden sticky top-0 z-30 bg-pln-950/95 backdrop-blur border-b border-white/10 px-4 py-3 flex items-center justify-between text-white">
-                <h2 class="font-display font-extrabold text-pln-900">PLN MATLEV Admin</h2>
+                <div class="flex items-center gap-2"><img src="{{ asset('images/pln transparan.png') }}" alt="Logo PLN" class="h-8 w-auto object-contain"><h2 class="font-display font-extrabold text-white">PLN MATLEV</h2></div>
                 <button @click="sidebarOpen = true" class="p-2 rounded-lg border border-white/20 text-white">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                 </button>
@@ -106,7 +106,6 @@
             <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.dashboard') ? 'bg-white text-amber-800' : 'text-stone-700 hover:bg-white/70 hover:text-amber-900' }}">Dashboard</a>
             <a href="{{ route('admin.queue') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.queue') ? 'bg-white text-amber-800' : 'text-stone-700 hover:bg-white/70 hover:text-amber-900' }}">Antrean Verifikasi</a>
             <a href="{{ route('admin.history') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.history') ? 'bg-white text-amber-800' : 'text-stone-700 hover:bg-white/70 hover:text-amber-900' }}">Riwayat Evaluasi</a>
-            <a href="{{ route('admin.users') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('admin.users') ? 'bg-white text-amber-800' : 'text-stone-700 hover:bg-white/70 hover:text-amber-900' }}">Manajemen User</a>
             <form action="{{ route('logout') }}" method="POST" class="pt-2">
                 @csrf
                 <button type="submit" class="w-full py-2 rounded-lg bg-rose-600 text-white text-sm font-bold">Logout</button>
