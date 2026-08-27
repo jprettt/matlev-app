@@ -198,6 +198,33 @@ class RoleAccessTest extends TestCase
         $this->assertMatchesRegularExpression('/Nilai SK:.*?font-extrabold[^>]*>\s*0\s*</s', $response->getContent());
     }
 
+    public function test_level_score_stays_zero_when_one_of_multiple_files_is_rejected(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create(['role' => 'user']);
+        $criteria = Kriteria::create(['code' => 'K1', 'title' => 'Kriteria']);
+        $subcriteria = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K1.1', 'title' => 'Sub Kriteria']);
+        $level = MaturityLevel::create(['sub_criteria_id' => $subcriteria->id, 'level' => 1, 'evidence_requirement' => 'PDF']);
+
+        $response = $this->actingAs($user)->post(route('matlev.upload', $level), [
+            'pdf_files' => [
+                UploadedFile::fake()->create('one.pdf', 10, 'application/pdf'),
+                UploadedFile::fake()->create('two.pdf', 10, 'application/pdf'),
+                UploadedFile::fake()->create('three.pdf', 10, 'application/pdf'),
+            ],
+        ]);
+
+        $response->assertSessionHas('success');
+        $this->assertDatabaseCount('evidence_uploads', 3);
+
+        EvidenceUpload::query()->where('original_filename', 'two.pdf')->update(['status' => 'rejected']);
+
+        $page = $this->actingAs($user)->get(route('user.kriteria', ['level' => $level->id]));
+
+        $page->assertOk();
+        $this->assertMatchesRegularExpression('/Nilai SK:.*?font-extrabold[^>]*>\s*0\s*</s', $page->getContent());
+    }
+
     public function test_any_user_can_submit_rejected_revision_and_old_file_is_kept(): void
     {
         Storage::fake('public');

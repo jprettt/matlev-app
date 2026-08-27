@@ -21,7 +21,7 @@ class MatlevController extends Controller
      */
     private function getStatsAndData()
     {
-        $criterias = Kriteria::with(['subKriterias.maturityLevels.evidenceUpload.user', 'subKriterias.maturityLevels.evidenceUpload.permissionRequests.requester', 'subKriterias.maturityLevels.evidenceUpload.revisions.user', 'subKriterias.maturityLevels.evidenceUpload.revisions.deletedBy'])->get();
+        $criterias = Kriteria::with(['subKriterias.maturityLevels.evidenceUploads.user', 'subKriterias.maturityLevels.evidenceUploads.permissionRequests.requester', 'subKriterias.maturityLevels.evidenceUploads.revisions.user', 'subKriterias.maturityLevels.evidenceUploads.revisions.deletedBy'])->get();
         $pendingPermissionRequests = DocumentPermissionRequest::with(['evidenceUpload.maturityLevel.subkriteria.kriteria', 'requester'])
             ->where('owner_id', Auth::id())
             ->where('action', 'edit')
@@ -40,18 +40,22 @@ class MatlevController extends Controller
             foreach ($crit->subKriterias as $sub) {
                 foreach ($sub->maturityLevels as $lvl) {
                     $totalSlots++;
-                    if ($lvl->evidenceUpload) {
-                        $st = $lvl->evidenceUpload->status ?? 'pending';
-                            $currentRevision = $lvl->evidenceUpload->revisions->first(fn ($revision) => $revision->is_current && $revision->status === 'pending');
-                            if ($st == 'approved') {
+                    $uploads = $lvl->evidenceUploads;
+                    if ($uploads->isNotEmpty()) {
+                        $levelApproved = $uploads->every(fn ($upload) => $upload->status === 'approved');
+                        if ($levelApproved) {
                             $totalApproved++;
-                        } elseif ($st == 'pending') {
+                        } elseif ($uploads->contains('status', 'pending')) {
                             $totalPending++;
-                            } elseif ($st == 'rejected' || ($st == 'pending' && $currentRevision)) {
-                                if ($st === 'rejected') {
-                                    $totalRejected++;
-                                }
-                            $rejectedItems[] = [
+                        } elseif ($uploads->contains('status', 'rejected')) {
+                            $totalRejected++;
+                        }
+
+                        foreach ($uploads as $upload) {
+                            $st = $upload->status ?? 'pending';
+                            $currentRevision = $upload->revisions->first(fn ($revision) => $revision->is_current && $revision->status === 'pending');
+                            if ($st === 'rejected') {
+                                $rejectedItems[] = [
                                     'criteria_id' => $crit->id,
                                     'criteria_code' => $crit->code ?? $crit->kode ?? '',
                                     'criteria' => $crit->title ?? $crit->nama ?? 'Kriteria',
@@ -59,39 +63,38 @@ class MatlevController extends Controller
                                     'sub' => $sub->title ?? $sub->nama ?? 'Sub Kriteria',
                                     'level' => $lvl->level,
                                     'requirement' => $lvl->evidence_requirement,
-                                    'upload' => $lvl->evidenceUpload,
+                                    'upload' => $upload,
                                     'current_revision' => $currentRevision,
-                            ];
-                        }
+                                ];
+                            }
 
-                        $activeRevisionForHistory = $lvl->evidenceUpload->revisions
-                            ->first(fn ($revision) => $revision->is_current && $revision->status !== 'deleted');
+                            $activeRevisionForHistory = $upload->revisions
+                                ->first(fn ($revision) => $revision->is_current && $revision->status !== 'deleted');
 
-                        // Kumpulkan riwayat aktivitas
-                        if (! $activeRevisionForHistory) {
-                            $allHistories[] = [
-                            'criteria_code' => $crit->code ?? $crit->kode ?? '',
-                            'criteria_title' => $crit->title ?? $crit->nama ?? '',
-                            'sub_code' => $sub->code ?? $sub->kode ?? '',
-                            'sub_title' => $sub->title ?? $sub->nama ?? '',
-                            'level' => $lvl->level,
-                            'requirement' => $lvl->evidence_requirement,
-                            'filename' => $lvl->evidenceUpload->original_filename,
-                            'file_path' => $lvl->evidenceUpload->file_path,
-                            'status' => $st,
-                            'note' => $lvl->evidenceUpload->rejection_note,
-                            'uploader_id' => $lvl->evidenceUpload->user_id,
-                            'uploader' => $lvl->evidenceUpload->user->name ?? 'User',
-                            'time' => $lvl->evidenceUpload->uploaded_at ?? $lvl->evidenceUpload->created_at,
-                            ];
-                        }
+                            if (! $activeRevisionForHistory) {
+                                $allHistories[] = [
+                                    'criteria_code' => $crit->code ?? $crit->kode ?? '',
+                                    'criteria_title' => $crit->title ?? $crit->nama ?? '',
+                                    'sub_code' => $sub->code ?? $sub->kode ?? '',
+                                    'sub_title' => $sub->title ?? $sub->nama ?? '',
+                                    'level' => $lvl->level,
+                                    'requirement' => $lvl->evidence_requirement,
+                                    'filename' => $upload->original_filename,
+                                    'file_path' => $upload->file_path,
+                                    'status' => $st,
+                                    'note' => $upload->rejection_note,
+                                    'uploader_id' => $upload->user_id,
+                                    'uploader' => $upload->user->name ?? 'User',
+                                    'time' => $upload->uploaded_at ?? $upload->created_at,
+                                ];
+                            }
 
-                        foreach ($lvl->evidenceUpload->revisions as $revision) {
+                            foreach ($upload->revisions as $revision) {
                             if ($activeRevisionForHistory && ! $revision->is_current && $revision->status !== 'deleted') {
                                 continue;
                             }
 
-                            $allHistories[] = [
+                                $allHistories[] = [
                                 'criteria_code' => $crit->code ?? $crit->kode ?? '',
                                 'criteria_title' => $crit->title ?? $crit->nama ?? '',
                                 'sub_code' => $sub->code ?? $sub->kode ?? '',
@@ -108,7 +111,8 @@ class MatlevController extends Controller
                                 'deleted_by' => $revision->deletedBy->name ?? null,
                                 'deleted_at' => $revision->deleted_at,
                                 'is_revision' => true,
-                            ];
+                                ];
+                            }
                         }
                     }
                 }
@@ -209,43 +213,49 @@ class MatlevController extends Controller
     public function upload(Request $request, $levelId)
     {
         $request->validate([
-            'pdf_file' => 'required|mimes:pdf|max:10240',
+            'pdf_files' => 'sometimes|required|array|min:1|max:20',
+            'pdf_files.*' => 'file|mimes:pdf|max:10240',
+            'pdf_file' => 'sometimes|file|mimes:pdf|max:10240',
+            'upload_id' => 'nullable|integer|exists:evidence_uploads,id',
         ]);
 
+        $files = $request->file('pdf_files', []);
+        if ($request->hasFile('pdf_file')) {
+            $files[] = $request->file('pdf_file');
+        }
+        if (count($files) === 0) {
+            return back()->withErrors(['pdf_files' => 'Pilih minimal satu file PDF.']);
+        }
+
         $maturityLevel = MaturityLevel::findOrFail($levelId);
-        $existingUpload = $maturityLevel->evidenceUpload;
         $uploadPage = route('user.kriteria', ['level' => $maturityLevel->id]);
 
         if ($maturityLevel->level > 1) {
             $previousLevel = MaturityLevel::where('sub_criteria_id', $maturityLevel->sub_criteria_id)
                 ->where('level', $maturityLevel->level - 1)
-                ->with('evidenceUpload')
+                ->with('evidenceUploads')
                 ->first();
 
-            if (! $previousLevel || ! $previousLevel->evidenceUpload) {
+            if (! $previousLevel || $previousLevel->evidenceUploads->isEmpty()) {
                 return redirect($uploadPage)->with('error', 'Anda wajib mengunggah dokumen Level ' . ($maturityLevel->level - 1) . ' terlebih dahulu.');
             }
         }
 
-        if ($maturityLevel->evidenceUpload && $maturityLevel->evidenceUpload->status !== 'rejected') {
-            return redirect($uploadPage)->with('error', 'Gagal: Slot indikator kematangan ini sudah diisi oleh ' . $maturityLevel->evidenceUpload->user->name);
-        }
-
-        $isRevision = (bool) ($existingUpload && $existingUpload->status === 'rejected');
-
         try {
-            DB::transaction(function () use ($request, $maturityLevel) {
-                $existing = EvidenceUpload::where('maturity_level_id', $maturityLevel->id)->lockForUpdate()->first();
-
-                if ($existing && $existing->status !== 'rejected') {
-                    throw new \Exception('Slot ini telah diisi oleh rekan tim lain beberapa saat lalu!');
+            $createdUploads = DB::transaction(function () use ($files, $maturityLevel, $request) {
+                $rejectedUploads = EvidenceUpload::where('maturity_level_id', $maturityLevel->id)
+                    ->where('status', 'rejected')->lockForUpdate()->get();
+                if ($request->filled('upload_id')) {
+                    $rejectedUploads = $rejectedUploads->filter(fn ($upload) => (int) $upload->id === (int) $request->upload_id)->values();
                 }
+                $created = [];
 
-                $file = $request->file('pdf_file');
-                $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
-                $path = $file->storeAs('evidence_pdfs', $filename, 'public');
+                foreach ($files as $index => $file) {
+                    $existing = $rejectedUploads->get($index);
+                    $filename = uniqid('', true) . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
+                    $path = $file->storeAs('evidence_pdfs', $filename, 'public');
 
-                if ($existing && $existing->status === 'rejected') {
+                    if ($existing) {
                     $nextVersion = ((int) EvidenceRevision::where('evidence_upload_id', $existing->id)->max('version_number')) + 1;
                     $activeRevision = EvidenceRevision::where('evidence_upload_id', $existing->id)
                         ->where('is_current', true)
@@ -276,37 +286,42 @@ class MatlevController extends Controller
                     EvidenceRevision::create([
                         'evidence_upload_id' => $existing->id,
                         'user_id' => Auth::id(),
-                        'version_number' => $nextVersion + 1,
+                        'version_number' => $nextVersion,
                         'file_path' => $path,
                         'original_filename' => $file->getClientOriginalName(),
                         'status' => 'pending',
                         'is_current' => true,
                         'uploaded_at' => now(),
                     ]);
-                } else {
-                    EvidenceUpload::create([
+                        $created[] = $existing->fresh();
+                    } else {
+                        $created[] = EvidenceUpload::create([
                         'maturity_level_id' => $maturityLevel->id,
                         'user_id' => Auth::id(),
                         'file_path' => $path,
                         'original_filename' => $file->getClientOriginalName(),
                         'status' => 'pending',
                         'uploaded_at' => now(),
-                    ]);
+                        ]);
+                    }
                 }
+
+                return $created;
             });
 
-            $upload = $maturityLevel->fresh()->evidenceUpload;
-            ActivityLog::create([
-                'evidence_upload_id' => $upload->id,
-                'maturity_level_id' => $maturityLevel->id,
-                'actor_id' => Auth::id(),
-                'activity_type' => $isRevision ? 'revision_upload' : 'upload',
-                'filename' => $upload->original_filename,
-                'status' => $upload->status,
-                'occurred_at' => $upload->uploaded_at ?? now(),
-            ]);
+            foreach ($createdUploads as $upload) {
+                ActivityLog::create([
+                    'evidence_upload_id' => $upload->id,
+                    'maturity_level_id' => $maturityLevel->id,
+                    'actor_id' => Auth::id(),
+                    'activity_type' => $upload->revisions()->exists() ? 'revision_upload' : 'upload',
+                    'filename' => $upload->original_filename,
+                    'status' => $upload->status,
+                    'occurred_at' => $upload->uploaded_at ?? now(),
+                ]);
+            }
 
-            return redirect($uploadPage)->with('success', 'Bukti dokumen PDF berhasil diunggah dan sedang menunggu penilaian!');
+            return redirect($uploadPage)->with('success', count($createdUploads) . ' bukti dokumen PDF berhasil diunggah dan sedang menunggu penilaian!');
         } catch (\Exception $e) {
             return redirect($uploadPage)->with('error', $e->getMessage());
         }

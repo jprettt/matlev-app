@@ -126,6 +126,7 @@
                         @else
                         <form x-data="{ selectedFile: false }" action="{{ route('matlev.upload', $item['upload']->maturity_level_id) }}" method="POST" enctype="multipart/form-data" class="space-y-3">
                             @csrf
+                            <input type="hidden" name="upload_id" value="{{ $item['upload']->id }}">
                             <input type="file" name="pdf_file" accept="application/pdf" required @change="selectedFile = true"
                                    class="block w-full text-xs text-stone-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-white file:text-stone-800 file:border file:border-stone-300 hover:file:bg-stone-50 cursor-pointer">
                             <button type="submit" 

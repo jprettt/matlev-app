@@ -77,9 +77,10 @@
                     foreach($sub->maturityLevels as $lvl) {
                         $critSlots++;
                         if($lvl->evidenceUpload) {
-                            if($lvl->evidenceUpload->status == 'approved') $critApproved++;
-                            elseif($lvl->evidenceUpload->status == 'pending') $critPending++;
-                            elseif($lvl->evidenceUpload->status == 'rejected') $critRejected++;
+                                $levelUploads = $lvl->evidenceUploads;
+                                if($levelUploads->isNotEmpty() && $levelUploads->every(fn ($upload) => $upload->status == 'approved')) $critApproved++;
+                                elseif($levelUploads->contains('status', 'pending')) $critPending++;
+                                elseif($levelUploads->contains('status', 'rejected')) $critRejected++;
                         }
                     }
                 }
@@ -123,7 +124,7 @@
                     @forelse($criteria->subKriterias as $sub)
                         @php
                             $subScore = $sub->maturityLevels
-                                ->filter(fn ($level) => $level->evidenceUpload?->status === 'approved')
+                                ->filter(fn ($level) => $level->evidenceUploads->isNotEmpty() && $level->evidenceUploads->every(fn ($upload) => $upload->status === 'approved'))
                                 ->max('level') ?? 0;
                         @endphp
                         <div class="bg-gradient-to-br from-amber-50/70 via-white to-cyan-50/70 p-5 rounded-2xl border border-blue-100 shadow-sm space-y-4">
@@ -157,8 +158,15 @@
                                 @forelse($sub->maturityLevels as $lvl)
                                     @php
                                         $previousLevel = $sub->maturityLevels->firstWhere('level', $lvl->level - 1);
-                                        $canUpload = $lvl->level === 1 || ($previousLevel && $previousLevel->evidenceUpload);
-                                        $currentRevision = $lvl->evidenceUpload?->revisions->first(fn ($revision) => $revision->is_current && $revision->status !== 'deleted');
+                                        $canUpload = $lvl->level === 1 || ($previousLevel && $previousLevel->evidenceUploads->isNotEmpty());
+                                        $levelUploads = $lvl->evidenceUploads;
+                                        $displayUpload = $levelUploads->firstWhere('status', 'rejected')
+                                            ?? $levelUploads->firstWhere('status', 'pending')
+                                            ?? $levelUploads->first();
+                                        $levelStatus = $levelUploads->contains('status', 'rejected')
+                                            ? 'rejected'
+                                            : ($levelUploads->contains('status', 'pending') ? 'pending' : 'approved');
+                                        $currentRevision = $displayUpload?->revisions->first(fn ($revision) => $revision->is_current && $revision->status !== 'deleted');
                                     @endphp
                                     <div id="level-{{ $lvl->id }}" class="{{ $canUpload ? 'bg-white' : 'bg-stone-50' }} p-3.5 rounded-2xl border border-stone-200/90 shadow-xs flex flex-col justify-between hover:border-fore-300 transition-colors">
                                         <div>
@@ -173,8 +181,31 @@
                                         </div>
 
                                         <div class="pt-2 border-t border-stone-100">
-                                            @if($lvl->evidenceUpload)
-                                                @php $st = $lvl->evidenceUpload->status ?? 'pending'; @endphp
+                                            @if($canUpload)
+                                            <form x-data="{ selectedFiles: false }" action="{{ route('matlev.upload', $lvl->id) }}" method="POST" enctype="multipart/form-data" class="mb-3 space-y-2">
+                                                @csrf
+                                                <input type="file" name="pdf_files[]" accept="application/pdf" multiple required @change="selectedFiles = $event.target.files.length > 0"
+                                                       class="block w-full text-[10px] text-stone-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:bg-pln-100 file:text-pln-800 hover:file:bg-pln-200 cursor-pointer">
+                                                <button type="submit" :disabled="!selectedFiles"
+                                                        :class="selectedFiles ? 'bg-pln-900 hover:bg-pln-800 text-white' : 'bg-stone-300 text-stone-700 cursor-not-allowed'"
+                                                        class="w-full text-[11px] font-bold py-1.5 px-3 rounded-lg transition shadow-xs">
+                                                    Upload
+                                                </button>
+                                            </form>
+                                            @endif
+                                            @if($lvl->evidenceUploads->isNotEmpty())
+                                                <div class="mb-3 space-y-1.5">
+                                                    <p class="text-[10px] font-bold uppercase tracking-wide text-stone-500">Daftar File ({{ $lvl->evidenceUploads->count() }})</p>
+                                                    @foreach($lvl->evidenceUploads as $fileUpload)
+                                                        <div class="flex items-center justify-between gap-2 rounded-lg border border-stone-200 bg-stone-50 px-2 py-1.5 text-[10px]">
+                                                            <a href="{{ asset('storage/' . $fileUpload->file_path) }}" target="_blank" class="min-w-0 truncate font-semibold text-stone-700 hover:text-pln-800 hover:underline" title="{{ $fileUpload->original_filename }}">{{ $fileUpload->original_filename }}</a>
+                                                            <span class="shrink-0 rounded px-1.5 py-0.5 font-bold {{ $fileUpload->status === 'approved' ? 'bg-emerald-100 text-emerald-800' : ($fileUpload->status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">{{ $fileUpload->status === 'approved' ? 'Disetujui' : ($fileUpload->status === 'rejected' ? 'Ditolak' : 'Menunggu') }}</span>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                            @if($displayUpload)
+                                                @php $st = $levelStatus; @endphp
 
                                                 @if($st == 'pending')
                                                     <!-- Status: Menunggu Penilaian -->
@@ -291,18 +322,7 @@
 
                                             @else
                                                 @if($canUpload)
-                                                <!-- Belum Ada Dokumen / Form Upload Baru (Fungsionalitas Asli) -->
-                                                <form x-data="{ selectedFile: false }" action="{{ route('matlev.upload', $lvl->id) }}" method="POST" enctype="multipart/form-data" class="space-y-2">
-                                                    @csrf
-                                                    <input type="file" name="pdf_file" accept="application/pdf" required @change="selectedFile = true"
-                                                           class="block w-full text-[10px] text-stone-500 file:mr-1.5 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-[10px] file:bg-stone-100 file:text-stone-700 hover:file:bg-stone-200 cursor-pointer">
-                                                    <button type="submit" 
-                                                            :disabled="!selectedFile"
-                                                            :class="selectedFile ? 'bg-pln-900 hover:bg-pln-800 text-white' : 'bg-stone-300 text-stone-700 cursor-not-allowed'"
-                                                            class="w-full text-[11px] font-bold py-1.5 px-3 rounded-lg transition shadow-xs">
-                                                        Upload PDF
-                                                    </button>
-                                                </form>
+                                                <p class="text-[10px] text-stone-500">Pilih file di atas untuk mengunggah bukti.</p>
                                                 @else
                                                     <p class="text-[10px] text-stone-500 bg-stone-100 border border-stone-200 rounded-lg p-2">Upload Level {{ $lvl->level - 1 }} terlebih dahulu.</p>
                                                 @endif

@@ -16,6 +16,11 @@ class MaturityLevel extends Model
         return $this->hasOne(EvidenceUpload::class, 'maturity_level_id');
     }
 
+    public function evidenceUploads()
+    {
+        return $this->hasMany(EvidenceUpload::class, 'maturity_level_id');
+    }
+
     public function subkriteria()
     {
         return $this->belongsTo(Subkriteria::class, 'sub_criteria_id');
