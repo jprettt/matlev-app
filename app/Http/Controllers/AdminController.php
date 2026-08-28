@@ -36,6 +36,12 @@ class AdminController extends Controller
 
     public function queue(Request $request)
     {
+        ActivityLog::create([
+            'actor_id' => Auth::id(),
+            'activity_type' => 'verification_opened',
+            'status' => 'pending',
+            'occurred_at' => now(),
+        ]);
         $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
 
         $uploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])

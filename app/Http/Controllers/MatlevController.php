@@ -361,6 +361,7 @@ class MatlevController extends Controller
 
         $level = $requirement->maturityLevel()->with('evidenceUploads')->firstOrFail();
         $existing = $requirement->evidenceUploads()->latest('id')->first();
+        $isRevisionUpload = (bool) $existing;
         $isOwner = $existing && (int) $existing->user_id === (int) Auth::id();
         $permission = $existing?->permissionRequests()
             ->where('requester_id', Auth::id())
@@ -439,6 +440,17 @@ class MatlevController extends Controller
         });
 
         $criteriaId = $level->subkriteria->kriteria->id;
+
+        $upload = $requirement->evidenceUploads()->latest('id')->firstOrFail();
+        ActivityLog::create([
+            'evidence_upload_id' => $upload->id,
+            'maturity_level_id' => $level->id,
+            'actor_id' => Auth::id(),
+            'activity_type' => $isRevisionUpload ? 'revision_upload' : 'upload',
+            'filename' => $upload->original_filename,
+            'status' => $upload->status,
+            'occurred_at' => $upload->uploaded_at ?? now(),
+        ]);
 
         return redirect()->route('user.kriteria', ['criteria_id' => $criteriaId])
             ->with('success', 'Evidence berhasil dikirim dan sedang menunggu penilaian.');

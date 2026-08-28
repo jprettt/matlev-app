@@ -51,6 +51,9 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:atasan')->group(function () {
         Route::get('/atasan/dashboard', [AtasanController::class, 'dashboard'])->name('atasan.dashboard');
         Route::get('/atasan/evidence', [AtasanController::class, 'approvedEvidence'])->name('atasan.evidence');
+        Route::get('/atasan/status-summary', [AtasanController::class, 'statusSummary'])->name('atasan.status.summary');
+        Route::get('/atasan/activity', [AtasanController::class, 'activityHistory'])->name('atasan.activity');
+        Route::get('/atasan/export', [AtasanController::class, 'exportForm'])->name('atasan.export');
         Route::get('/atasan/export-summary', [AtasanController::class, 'exportSummary'])->name('atasan.export.summary');
         Route::get('/atasan/export-pdf', [AtasanController::class, 'exportPdf'])->name('atasan.export.pdf');
         Route::get('/atasan/export-excel', [AtasanController::class, 'exportExcel'])->name('atasan.export.excel');

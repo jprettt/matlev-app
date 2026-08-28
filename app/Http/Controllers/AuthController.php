@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Models\ActivityLog;
 
 class AuthController extends Controller
 {
@@ -38,6 +39,12 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
+            ActivityLog::create([
+                'actor_id' => Auth::id(),
+                'activity_type' => 'login',
+                'status' => 'success',
+                'occurred_at' => now(),
+            ]);
 
             return redirect()->intended($this->routeByRole(Auth::user()));
         }
@@ -71,6 +78,14 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        if (Auth::check()) {
+            ActivityLog::create([
+                'actor_id' => Auth::id(),
+                'activity_type' => 'logout',
+                'status' => 'success',
+                'occurred_at' => now(),
+            ]);
+        }
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

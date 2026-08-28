@@ -1,19 +1,14 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eviden Valid - Atasan</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-100 text-slate-900 min-h-screen">
-<div class="max-w-6xl mx-auto p-6">
+@extends('layouts.atasan')
+
+@section('title', 'Eviden Valid')
+
+@section('content')
+<div class="space-y-6">
     <div class="flex items-center justify-between mb-6">
         <div>
             <p class="text-xs uppercase tracking-[0.2em] text-blue-700">Eviden Valid</p>
             <h1 class="text-3xl font-bold mt-2">Daftar Dokumen yang Telah Disetujui</h1>
         </div>
-        <a href="{{ route('atasan.dashboard') }}" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold">Kembali</a>
     </div>
 
     <div class="space-y-4">
@@ -38,5 +33,4 @@
         @endforeach
     </div>
 </div>
-</body>
-</html>
+@endsection

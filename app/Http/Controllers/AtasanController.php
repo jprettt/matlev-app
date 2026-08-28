@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\EvidenceUpload;
+use App\Models\ActivityLog;
 use App\Models\Kriteria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -55,11 +56,53 @@ class AtasanController extends Controller
         return view('atasan.evidence', compact('uploads'));
     }
 
-    public function exportSummary()
+    public function statusSummary()
     {
         $uploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
             ->orderByDesc('uploaded_at')
             ->get();
+
+        return view('atasan.status-summary', compact('uploads'));
+    }
+
+    public function activityHistory(Request $request)
+    {
+        $activityTypes = ActivityLog::query()->distinct()->orderBy('activity_type')->pluck('activity_type');
+        $users = \App\Models\User::query()->orderBy('name')->get(['id', 'name', 'role']);
+        $activityLogs = ActivityLog::with(['actor', 'targetUser', 'maturityLevel.subkriteria.kriteria'])
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->string('search')->trim();
+                $query->where(function ($logQuery) use ($search) {
+                    $logQuery->where('filename', 'like', '%' . $search . '%')
+                        ->orWhere('note', 'like', '%' . $search . '%')
+                        ->orWhereHas('actor', fn ($actorQuery) => $actorQuery->where('name', 'like', '%' . $search . '%'))
+                        ->orWhereHas('evidenceUpload', fn ($uploadQuery) => $uploadQuery->where('original_filename', 'like', '%' . $search . '%'));
+                });
+            })
+            ->when($request->filled('user_id'), fn ($query) => $query->where('actor_id', $request->user_id))
+            ->when($request->filled('role'), fn ($query) => $query->whereHas('actor', fn ($actorQuery) => $actorQuery->where('role', $request->role)))
+            ->when($request->filled('activity_type'), fn ($query) => $query->where('activity_type', $request->activity_type))
+            ->when($request->filled('from_date'), fn ($query) => $query->whereDate('occurred_at', '>=', $request->from_date))
+            ->when($request->filled('to_date'), fn ($query) => $query->whereDate('occurred_at', '<=', $request->to_date))
+            ->orderByDesc('occurred_at')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('atasan.activity', compact('activityLogs', 'activityTypes', 'users'));
+    }
+
+    public function exportForm()
+    {
+        return view('atasan.export');
+    }
+
+    public function exportSummary(Request $request)
+    {
+        $validated = $request->validate([
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+        ]);
+        $uploads = $this->uploadsForExport($validated);
 
         $rows = [
             ['No', 'Nama User', 'Unit Kerja', 'Kriteria', 'Sub Kriteria', 'Level', 'Status', 'Catatan', 'Tanggal Upload'],
@@ -95,17 +138,28 @@ class AtasanController extends Controller
         ]);
     }
 
-    public function exportPdf()
+    public function exportPdf(Request $request)
     {
-        $uploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
-            ->orderByDesc('uploaded_at')
-            ->get();
+        $validated = $request->validate([
+            'from_date' => ['nullable', 'date'],
+            'to_date' => ['nullable', 'date', 'after_or_equal:from_date'],
+        ]);
+        $uploads = $this->uploadsForExport($validated);
 
-        return view('atasan.export-pdf', compact('uploads'));
+        return view('atasan.export-pdf', compact('uploads', 'validated'));
     }
 
-    public function exportExcel()
+    public function exportExcel(Request $request)
     {
-        return $this->exportSummary();
+        return $this->exportSummary($request);
+    }
+
+    private function uploadsForExport(array $dates)
+    {
+        return EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
+            ->when($dates['from_date'] ?? null, fn ($query, $date) => $query->whereDate('uploaded_at', '>=', $date))
+            ->when($dates['to_date'] ?? null, fn ($query, $date) => $query->whereDate('uploaded_at', '<=', $date))
+            ->orderByDesc('uploaded_at')
+            ->get();
     }
 }
