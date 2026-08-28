@@ -53,6 +53,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/atasan/evidence', [AtasanController::class, 'approvedEvidence'])->name('atasan.evidence');
         Route::get('/atasan/status-summary', [AtasanController::class, 'statusSummary'])->name('atasan.status.summary');
         Route::get('/atasan/activity', [AtasanController::class, 'activityHistory'])->name('atasan.activity');
+        Route::get('/atasan/users', [AtasanController::class, 'users'])->name('atasan.users');
+        Route::post('/atasan/users', [AtasanController::class, 'storeUser'])->name('atasan.users.store');
+        Route::put('/atasan/users/{user}', [AtasanController::class, 'updateUser'])->name('atasan.users.update');
+        Route::patch('/atasan/users/{user}/toggle', [AtasanController::class, 'toggleUser'])->name('atasan.users.toggle');
         Route::get('/atasan/export', [AtasanController::class, 'exportForm'])->name('atasan.export');
         Route::get('/atasan/export-summary', [AtasanController::class, 'exportSummary'])->name('atasan.export.summary');
         Route::get('/atasan/export-pdf', [AtasanController::class, 'exportPdf'])->name('atasan.export.pdf');

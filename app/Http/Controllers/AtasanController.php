@@ -7,6 +7,9 @@ use App\Models\ActivityLog;
 use App\Models\Kriteria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use App\Models\User;
 
 class AtasanController extends Controller
 {
@@ -67,8 +70,8 @@ class AtasanController extends Controller
 
     public function activityHistory(Request $request)
     {
-        $activityTypes = ActivityLog::query()->distinct()->orderBy('activity_type')->pluck('activity_type');
-        $users = \App\Models\User::query()->orderBy('name')->get(['id', 'name', 'role']);
+        $activityTypes = collect(['login', 'logout', 'upload', 'revision_upload', 'evaluation', 'verification_opened']);
+        $users = User::query()->orderBy('name')->get(['id', 'name', 'role']);
         $activityLogs = ActivityLog::with(['actor', 'targetUser', 'maturityLevel.subkriteria.kriteria'])
             ->when($request->filled('search'), function ($query) use ($request) {
                 $search = $request->string('search')->trim();
@@ -89,6 +92,56 @@ class AtasanController extends Controller
             ->withQueryString();
 
         return view('atasan.activity', compact('activityLogs', 'activityTypes', 'users'));
+    }
+
+    public function users()
+    {
+        $users = User::query()->orderBy('name')->get();
+
+        return view('atasan.users', compact('users'));
+    }
+
+    public function storeUser(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'role' => ['required', Rule::in(['user', 'admin', 'atasan'])],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+        ]);
+        $validated['password'] = Hash::make($validated['password']);
+        $validated['is_active'] = true;
+        User::create($validated);
+
+        return back()->with('success', 'Pengguna berhasil ditambahkan.');
+    }
+
+    public function updateUser(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'role' => ['required', Rule::in(['user', 'admin', 'atasan'])],
+            'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+        ]);
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'role' => $validated['role'],
+        ]);
+        if (! empty($validated['password'])) {
+            $user->update(['password' => Hash::make($validated['password'])]);
+        }
+
+        return back()->with('success', 'Data pengguna berhasil diperbarui.');
+    }
+
+    public function toggleUser(User $user)
+    {
+        abort_if($user->id === Auth::id(), 422, 'Akun Anda sendiri tidak dapat dinonaktifkan.');
+        $user->update(['is_active' => ! $user->is_active]);
+
+        return back()->with('success', 'Status akun berhasil diperbarui.');
     }
 
     public function exportForm()

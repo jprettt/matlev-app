@@ -10,7 +10,7 @@
         <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Pilih periode tanggal upload dokumen yang ingin dimasukkan ke dalam laporan.</p>
     </header>
 
-    <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg shadow-slate-900/5">
         <div class="border-b border-slate-100 bg-skywash px-6 py-5 sm:px-8">
             <h2 class="font-display text-xl font-bold text-ink">Periode Laporan</h2>
             <p class="mt-1 text-xs text-slate-500">Tanggal akhir termasuk dalam hasil laporan.</p>
