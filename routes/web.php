@@ -14,6 +14,10 @@ Route::post('/register', [AuthController::class, 'register'])->name('register.po
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'history'])->name('notifications.history');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+
     Route::middleware('role:user')->group(function () {
         Route::get('/dashboard', [MatlevController::class, 'dashboard'])->name('user.dashboard');
         Route::get('/kriteria', [MatlevController::class, 'kriteria'])->name('user.kriteria');
@@ -21,9 +25,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/revisi', [MatlevController::class, 'revisi'])->name('user.revisi');
         Route::get('/riwayat', [MatlevController::class, 'riwayat'])->name('user.history');
         Route::get('/panduan', [MatlevController::class, 'panduan'])->name('user.panduan');
-        Route::get('/notifications', [NotificationController::class, 'history'])->name('notifications.history');
-        Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
-        Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
         Route::post('/upload/{maturityLevelId}', [MatlevController::class, 'upload'])->name('matlev.upload');
         Route::post('/evidence-requirements/{requirement}/upload', [MatlevController::class, 'uploadEvidenceRequirement'])->name('evidence.upload');
         Route::delete('/documents/revisions/{revision}', [DocumentPermissionController::class, 'destroyRevision'])->name('documents.revisions.delete');
@@ -37,7 +38,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
         Route::get('/admin/queue', [AdminController::class, 'queue'])->name('admin.queue');
-        Route::get('/admin/history', [AdminController::class, 'history'])->name('admin.history');
+        Route::get('/admin/activity', [AdminController::class, 'activityHistory'])->name('admin.activity');
         Route::post('/admin/criteria', [AdminController::class, 'storeCriteria'])->name('admin.criteria.store');
         Route::delete('/admin/criteria/{id}', [AdminController::class, 'destroyCriteria'])->name('admin.criteria.delete');
         Route::post('/admin/subcriteria', [AdminController::class, 'storeSubcriteria'])->name('admin.subcriteria.store');

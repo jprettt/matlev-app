@@ -9,6 +9,8 @@ use App\Models\DocumentPermissionRequest;
 use App\Models\EvidenceRevision;
 use App\Models\EvidenceRequirement;
 use App\Models\ActivityLog;
+use App\Models\AppNotification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -328,6 +330,18 @@ class MatlevController extends Controller
                     'status' => $upload->status,
                     'occurred_at' => $upload->uploaded_at ?? now(),
                 ]);
+
+                User::where('role', 'admin')->each(function ($admin) use ($upload, $maturityLevel) {
+                    $isRevision = $upload->revisions()->exists();
+                    AppNotification::create([
+                        'recipient_id' => $admin->id,
+                        'type' => $isRevision ? 'revision_upload' : 'upload',
+                        'title' => $isRevision ? 'Dokumen revisi baru' : 'Dokumen baru diunggah',
+                        'message' => $upload->user->name . ' ' . ($isRevision ? 'mengunggah revisi' : 'mengunggah') . ' ' . $upload->original_filename . '.',
+                        'document_id' => $upload->id,
+                        'target_url' => route('admin.queue'),
+                    ]);
+                });
             }
 
             return redirect($uploadPage)->with('success', count($createdUploads) . ' bukti dokumen PDF berhasil diunggah dan sedang menunggu penilaian!');
@@ -424,7 +438,10 @@ class MatlevController extends Controller
             }
         });
 
-        return back()->with('success', 'Evidence berhasil dikirim dan sedang menunggu penilaian.');
+        $criteriaId = $level->subkriteria->kriteria->id;
+
+        return redirect()->route('user.kriteria', ['criteria_id' => $criteriaId])
+            ->with('success', 'Evidence berhasil dikirim dan sedang menunggu penilaian.');
     }
 
     public function exportReceipt()

@@ -16,7 +16,9 @@ class ActivityLog extends Model
         'target_user_id',
         'activity_type',
         'filename',
+        'status_before',
         'status',
+        'note',
         'occurred_at',
     ];
 

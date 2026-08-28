@@ -28,5 +28,13 @@ class AppServiceProvider extends ServiceProvider
             $view->with('navbarNotifications', $notifications)
                 ->with('navbarUnreadCount', $unreadCount);
         });
+
+            View::composer('layouts.admin', function ($view) {
+                $notifications = Auth::check() ? Auth::user()->appNotifications()->latest()->limit(10)->get() : collect();
+                $unreadCount = Auth::check() ? Auth::user()->appNotifications()->where('is_read', false)->count() : 0;
+
+                $view->with('navbarNotifications', $notifications)
+                ->with('navbarUnreadCount', $unreadCount);
+            });
     }
 }

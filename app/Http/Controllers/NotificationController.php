@@ -16,7 +16,7 @@ class NotificationController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        return view('user.notifications', compact('notifications', 'filter'));
+        return view(Auth::user()->role === 'admin' ? 'admin.notifications' : 'user.notifications', compact('notifications', 'filter'));
     }
 
     public function read(Request $request, int $notification)
@@ -24,7 +24,7 @@ class NotificationController extends Controller
         $item = Auth::user()->appNotifications()->findOrFail($notification);
         $item->update(['is_read' => true]);
 
-        return redirect($item->target_url ?: route('user.dashboard'));
+        return redirect($item->target_url ?: (Auth::user()->role === 'admin' ? route('admin.dashboard') : route('user.dashboard')));
     }
 
     public function markAllRead()

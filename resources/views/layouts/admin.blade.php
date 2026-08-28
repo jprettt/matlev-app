@@ -54,9 +54,9 @@
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V7a2 2 0 00-2-2h-3V3m0 0L9 3m6 0v2M4 7h16M5 7l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12" /></svg>
                     <span x-show="!sidebarCollapsed">Antrean Verifikasi</span>
                 </a>
-                <a href="{{ route('admin.history') }}" title="Riwayat Evaluasi" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-base font-semibold transition {{ request()->routeIs('admin.history') ? 'bg-[#dfbd28] text-white shadow-lg shadow-yellow-950/20' : 'text-white hover:bg-[#caa51b]' }}" :class="sidebarCollapsed ? 'justify-center' : ''">
+                <a href="{{ route('admin.activity') }}" title="Riwayat Aktivitas" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-base font-semibold transition {{ request()->routeIs('admin.activity') ? 'bg-[#dfbd28] text-white shadow-lg shadow-yellow-950/20' : 'text-white hover:bg-[#caa51b]' }}" :class="sidebarCollapsed ? 'justify-center' : ''">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-3-6.708" /></svg>
-                    <span x-show="!sidebarCollapsed">Riwayat Evaluasi</span>
+                        <span x-show="!sidebarCollapsed">Riwayat Aktivitas</span>
                 </a>
             </nav>
             <div class="mt-auto p-3 border-t border-yellow-200/20 space-y-2">
@@ -75,6 +75,23 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                 </button>
             </div>
+            <div class="flex justify-end items-center gap-3 px-4 sm:px-6 lg:px-8 pt-4">
+                <div class="relative" x-data="{ notificationOpen: false }">
+                    <button type="button" @click="notificationOpen = !notificationOpen" class="relative w-10 h-10 inline-flex items-center justify-center rounded-lg text-stone-700 hover:bg-stone-100 transition" aria-label="Notifikasi">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.4-1.6A2 2 0 0 1 18 14v-3a6 6 0 0 0-12 0v3a2 2 0 0 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0m6 0H9" /></svg>
+                        @if($navbarUnreadCount > 0)<span class="absolute top-1 right-1 min-w-4 h-4 px-1 rounded-full bg-pln-700 text-white text-[9px] font-extrabold leading-4">{{ $navbarUnreadCount > 99 ? '99+' : $navbarUnreadCount }}</span>@endif
+                    </button>
+                    <div x-show="notificationOpen" x-transition @click.outside="notificationOpen = false" class="absolute right-0 z-40 mt-2 w-80 rounded-xl border border-stone-200 bg-white shadow-xl" style="display: none;">
+                        <div class="flex items-center justify-between border-b border-stone-100 px-4 py-3"><strong class="text-xs">Notifikasi</strong>@if($navbarUnreadCount > 0)<form action="{{ route('notifications.read-all') }}" method="POST">@csrf<button class="text-[10px] font-bold text-pln-700">Tandai semua dibaca</button></form>@endif</div>
+                        @forelse($navbarNotifications as $notification)
+                            <form action="{{ route('notifications.read', $notification->id) }}" method="POST">@csrf<button type="submit" class="w-full border-b border-stone-100 px-4 py-3 text-left {{ $notification->is_read ? '' : 'bg-amber-50' }}"><p class="text-xs font-bold">{{ $notification->title }}</p><p class="mt-1 text-[11px] text-stone-500">{{ $notification->message }}</p></button></form>
+                        @empty
+                            <p class="px-4 py-6 text-center text-xs text-stone-400">Belum ada notifikasi.</p>
+                        @endforelse
+                        <a href="{{ route('notifications.history') }}" class="block border-t border-stone-100 px-4 py-3 text-center text-xs font-bold text-pln-700">Riwayat Notifikasi</a>
+                    </div>
+                </div>
+            </div>
             <main class="p-4 sm:p-6 lg:p-8 max-w-[1600px]">@yield('content')</main>
         </div>
     </div>
@@ -87,7 +104,7 @@
             </div>
             <a href="{{ route('admin.dashboard') }}" class="block px-3 py-2 rounded-lg text-base {{ request()->routeIs('admin.dashboard') ? 'bg-[#dfbd28] text-white' : 'text-white hover:bg-[#caa51b]' }}">Dashboard</a>
             <a href="{{ route('admin.queue') }}" class="block px-3 py-2 rounded-lg text-base {{ request()->routeIs('admin.queue') ? 'bg-[#dfbd28] text-white' : 'text-white hover:bg-[#caa51b]' }}">Antrean Verifikasi</a>
-            <a href="{{ route('admin.history') }}" class="block px-3 py-2 rounded-lg text-base {{ request()->routeIs('admin.history') ? 'bg-[#dfbd28] text-white' : 'text-white hover:bg-[#caa51b]' }}">Riwayat Evaluasi</a>
+            <a href="{{ route('admin.activity') }}" class="block px-3 py-2 rounded-lg text-base {{ request()->routeIs('admin.activity') ? 'bg-[#dfbd28] text-white' : 'text-white hover:bg-[#caa51b]' }}">Riwayat Aktivitas</a>
             <form action="{{ route('logout') }}" method="POST" class="pt-2" onsubmit="return confirm('Yakin ingin logout?');">
                 @csrf
                 <button type="submit" class="w-full flex items-center justify-center gap-2 py-2 text-white hover:text-yellow-100 text-sm font-bold">

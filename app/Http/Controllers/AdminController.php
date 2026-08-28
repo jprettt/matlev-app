@@ -8,6 +8,7 @@ use App\Models\AppNotification;
 use App\Models\Kriteria;
 use App\Models\MaturityLevel;
 use App\Models\Subkriteria;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -54,31 +55,20 @@ class AdminController extends Controller
         return view('admin.queue', compact('uploads', 'criteriaOptions'));
     }
 
-    public function history(Request $request)
+    public function activityHistory(Request $request)
     {
-        $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
-
-        $uploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
-            ->whereIn('status', ['approved', 'rejected'])
-            ->when($request->filled('status'), function ($query) use ($request) {
-                $query->where('status', $request->status);
-            })
-            ->when($request->filled('from_date'), function ($query) use ($request) {
-                $query->whereDate('updated_at', '>=', $request->from_date);
-            })
-            ->when($request->filled('to_date'), function ($query) use ($request) {
-                $query->whereDate('updated_at', '<=', $request->to_date);
-            })
-            ->when($request->filled('criteria_id'), function ($query) use ($request) {
-                $query->whereHas('maturityLevel.subkriteria', function ($subQuery) use ($request) {
-                    $subQuery->where('criteria_id', $request->criteria_id);
-                });
-            })
-            ->orderByDesc('updated_at')
-            ->paginate(12)
+        $activityTypes = collect(['upload', 'revision_upload', 'evaluation']);
+        $activityLogs = ActivityLog::with(['actor', 'targetUser', 'maturityLevel.subkriteria.kriteria'])
+            ->whereIn('activity_type', $activityTypes)
+            ->when($request->filled('activity_type'), fn ($query) => $query->where('activity_type', $request->activity_type))
+            ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
+            ->when($request->filled('from_date'), fn ($query) => $query->whereDate('occurred_at', '>=', $request->from_date))
+            ->when($request->filled('to_date'), fn ($query) => $query->whereDate('occurred_at', '<=', $request->to_date))
+            ->orderByDesc('occurred_at')
+            ->paginate(20)
             ->withQueryString();
 
-        return view('admin.history', compact('uploads', 'criteriaOptions'));
+        return view('admin.activity', compact('activityLogs', 'activityTypes'));
     }
 
     public function verifyUpload(Request $request, $id)
@@ -89,9 +79,11 @@ class AdminController extends Controller
         ]);
 
         $upload = EvidenceUpload::findOrFail($id);
+        $statusBefore = $upload->status;
+        $statusAfter = $request->status;
         $upload->update([
-            'status' => $request->status,
-            'rejection_note' => $request->status === 'rejected' ? ($request->rejection_note ?? 'Dokumen tidak sesuai dengan persyaratan.') : null,
+            'status' => $statusAfter,
+            'rejection_note' => $statusAfter === 'rejected' ? ($request->rejection_note ?? 'Dokumen tidak sesuai dengan persyaratan.') : null,
             'reviewed_at' => now(),
             'reviewed_by' => Auth::id(),
         ]);
@@ -102,7 +94,9 @@ class AdminController extends Controller
             'actor_id' => Auth::id(),
             'activity_type' => 'evaluation',
             'filename' => $upload->original_filename,
-            'status' => $request->status,
+            'status_before' => $statusBefore,
+            'status' => $statusAfter,
+            'note' => $statusAfter === 'rejected' ? $upload->rejection_note : null,
             'occurred_at' => now(),
         ]);
 
