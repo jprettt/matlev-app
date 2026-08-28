@@ -92,6 +92,8 @@ class AdminController extends Controller
         $upload->update([
             'status' => $request->status,
             'rejection_note' => $request->status === 'rejected' ? ($request->rejection_note ?? 'Dokumen tidak sesuai dengan persyaratan.') : null,
+            'reviewed_at' => now(),
+            'reviewed_by' => Auth::id(),
         ]);
 
         ActivityLog::create([

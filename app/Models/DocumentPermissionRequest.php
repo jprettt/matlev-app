@@ -13,6 +13,7 @@ class DocumentPermissionRequest extends Model
         'evidence_upload_id',
         'owner_id',
         'requester_id',
+        'reason',
         'action',
         'status',
         'responded_at',

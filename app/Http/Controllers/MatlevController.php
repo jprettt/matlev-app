@@ -7,6 +7,7 @@ use App\Models\MaturityLevel;
 use App\Models\EvidenceUpload;
 use App\Models\DocumentPermissionRequest;
 use App\Models\EvidenceRevision;
+use App\Models\EvidenceRequirement;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +22,15 @@ class MatlevController extends Controller
      */
     private function getStatsAndData()
     {
-        $criterias = Kriteria::with(['subKriterias.maturityLevels.evidenceUploads.user', 'subKriterias.maturityLevels.evidenceUploads.permissionRequests.requester', 'subKriterias.maturityLevels.evidenceUploads.revisions.user', 'subKriterias.maturityLevels.evidenceUploads.revisions.deletedBy'])->get();
+        $criterias = Kriteria::with([
+            'subKriterias.maturityLevels.evidenceUploads.user',
+            'subKriterias.maturityLevels.evidenceUploads.permissionRequests.requester',
+            'subKriterias.maturityLevels.evidenceUploads.revisions.user',
+            'subKriterias.maturityLevels.evidenceUploads.revisions.deletedBy',
+            'subKriterias.maturityLevels.evidenceRequirements.evidenceUploads.user',
+            'subKriterias.maturityLevels.evidenceRequirements.evidenceUploads.permissionRequests.requester',
+            'subKriterias.maturityLevels.evidenceRequirements.evidenceUploads.revisions.user',
+        ])->get();
         $pendingPermissionRequests = DocumentPermissionRequest::with(['evidenceUpload.maturityLevel.subkriteria.kriteria', 'requester'])
             ->where('owner_id', Auth::id())
             ->where('action', 'edit')
@@ -325,6 +334,97 @@ class MatlevController extends Controller
         } catch (\Exception $e) {
             return redirect($uploadPage)->with('error', $e->getMessage());
         }
+    }
+
+    public function uploadEvidenceRequirement(Request $request, EvidenceRequirement $requirement)
+    {
+        $request->validate([
+            'document' => 'required|file|mimes:' . strtolower($requirement->allowed_file_type) . '|max:' . $requirement->max_file_size,
+        ], [
+            'document.mimes' => 'File harus berformat ' . strtoupper($requirement->allowed_file_type) . '.',
+            'document.max' => 'Ukuran file maksimum ' . round($requirement->max_file_size / 1024, 1) . ' MB.',
+        ]);
+
+        $level = $requirement->maturityLevel()->with('evidenceUploads')->firstOrFail();
+        $existing = $requirement->evidenceUploads()->latest('id')->first();
+        $isOwner = $existing && (int) $existing->user_id === (int) Auth::id();
+        $permission = $existing?->permissionRequests()
+            ->where('requester_id', Auth::id())
+            ->where('action', 'edit')
+            ->where('status', 'approved')
+            ->whereNull('used_at')
+            ->latest('responded_at')
+            ->first();
+
+        if ($existing && $existing->status !== 'rejected') {
+            return back()->withErrors(['document' => 'Evidence ini sudah memiliki file aktif dan tidak dapat diganti saat berstatus ' . $existing->status . '.']);
+        }
+
+        if ($existing && ! $isOwner && ! $permission) {
+            abort(403, 'Anda belum mendapat izin untuk mengganti evidence ini.');
+        }
+
+        $file = $request->file('document');
+        $path = $file->storeAs('evidence_pdfs', uniqid('', true) . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName()), 'public');
+
+        DB::transaction(function () use ($existing, $requirement, $file, $path, $permission) {
+            if (! $existing) {
+                $existing = EvidenceUpload::create([
+                    'maturity_level_id' => $requirement->maturity_level_id,
+                    'evidence_requirement_id' => $requirement->id,
+                    'user_id' => Auth::id(),
+                    'file_path' => $path,
+                    'original_filename' => $file->getClientOriginalName(),
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'status' => 'pending',
+                    'uploaded_at' => now(),
+                ]);
+            } else {
+                $nextVersion = ((int) $existing->revisions()->max('version_number')) + 1;
+                $activeRevision = $existing->revisions()->where('is_current', true)->first();
+                if ($activeRevision) {
+                    $activeRevision->update(['is_current' => false]);
+                } else {
+                    EvidenceRevision::create([
+                        'evidence_upload_id' => $existing->id,
+                        'user_id' => $existing->user_id,
+                        'version_number' => $nextVersion++,
+                        'file_path' => $existing->file_path,
+                        'original_filename' => $existing->original_filename,
+                        'status' => $existing->status,
+                        'is_current' => false,
+                        'rejection_note' => $existing->rejection_note,
+                        'uploaded_at' => $existing->uploaded_at ?? $existing->created_at,
+                    ]);
+                }
+                $existing->update([
+                    'user_id' => Auth::id(),
+                    'file_path' => $path,
+                    'original_filename' => $file->getClientOriginalName(),
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'status' => 'pending',
+                    'rejection_note' => null,
+                    'uploaded_at' => now(),
+                    'reviewed_at' => null,
+                    'reviewed_by' => null,
+                ]);
+                EvidenceRevision::create([
+                    'evidence_upload_id' => $existing->id,
+                    'user_id' => Auth::id(),
+                    'version_number' => $nextVersion,
+                    'file_path' => $path,
+                    'original_filename' => $file->getClientOriginalName(),
+                    'status' => 'pending',
+                    'is_current' => true,
+                    'uploaded_at' => now(),
+                ]);
+                $permission?->update(['used_at' => now()]);
+            }
+        });
+
+        return back()->with('success', 'Evidence berhasil dikirim dan sedang menunggu penilaian.');
     }
 
     public function exportReceipt()

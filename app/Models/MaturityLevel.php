@@ -21,6 +21,11 @@ class MaturityLevel extends Model
         return $this->hasMany(EvidenceUpload::class, 'maturity_level_id');
     }
 
+    public function evidenceRequirements()
+    {
+        return $this->hasMany(EvidenceRequirement::class, 'maturity_level_id')->orderBy('sort_order');
+    }
+
     public function subkriteria()
     {
         return $this->belongsTo(Subkriteria::class, 'sub_criteria_id');

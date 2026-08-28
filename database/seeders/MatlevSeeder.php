@@ -12,6 +12,11 @@ class MatlevSeeder extends Seeder
     {
         // 1. Matikan Foreign Key Constraint & Bersihkan Data Lama
         Schema::disableForeignKeyConstraints();
+        DB::table('app_notifications')->truncate();
+        DB::table('document_permission_requests')->truncate();
+        DB::table('evidence_revisions')->truncate();
+        DB::table('evidence_uploads')->truncate();
+        DB::table('evidence_requirements')->truncate();
         DB::table('maturity_levels')->truncate();
         DB::table('sub_criterias')->truncate();
         DB::table('criterias')->truncate();
@@ -171,5 +176,74 @@ class MatlevSeeder extends Seeder
             ['sub_criteria_id' => 17, 'level' => 4, 'description' => "1. Tindak lanjut temuan Unit (Unit Induk, Unit Pelaksana dan Sub Unit Pelaksana) telah ditujukan kepada bidang terkait dan telah ditindaklanjuti sesuai dengan batas waktu yang telah ditentukan. dan dimonitor % temuan yang telah ditindaklanjuti terhadap total temuan setiap bulannya dan diinformasikan ke seluruh bidang bersama penyampaian safety perfomance pyramid setiap bulannya\n2. Unit memonitor jumlah user active setiap bulannya , dengan target rata-rata 10% User Active dalam satu semester berdasarkan monitoring bulanannya\n3. Reporting Culture Indeks mencapai 80%", 'evidence_requirement' => null, 'created_at' => $now, 'updated_at' => $now],
             ['sub_criteria_id' => 17, 'level' => 5, 'description' => "Seluruh Unit (Unit Induk, Unit Pelaksana dan Sub Unit Pelaksana) memiliki Mapping Hazard dan Risk berdasarkan hasil temuan dan tindaklanjut serta analisa risiko dalam aplikasi inspekta.\nMemiliki safety perfomance pyramid dan monitoring tindak lanjut temuan dan disampaikan ke seluruh bidang progress penyelesaiannya >90% temuan terselesaikan.\nMemiliki OFI dan AFI yang disusun bersama K3L dan bidang terkait.\nReporting Culture Indeks mencapai 95%", 'evidence_requirement' => null, 'created_at' => $now, 'updated_at' => $now],
         ]);
+
+        $requirements = [];
+        foreach (DB::table('maturity_levels')->orderBy('id')->get() as $level) {
+            $names = $level->level === 1
+                ? ['RKAP Bidang K3', 'Dokumen IBPPR', 'Bukti Pengesahan']
+                : ['Dokumen Program K3', 'Bukti Pelaksanaan', 'Laporan Evaluasi'];
+            foreach ($names as $sort => $name) {
+                $requirements[] = [
+                    'maturity_level_id' => $level->id,
+                    'name' => $name,
+                    'description' => 'Dokumen pendukung untuk membuktikan pemenuhan indikator Level ' . $level->level . '.',
+                    'is_required' => true,
+                    'allowed_file_type' => 'pdf',
+                    'max_file_size' => 10240,
+                    'sort_order' => $sort + 1,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
+        }
+        DB::table('evidence_requirements')->insert($requirements);
+
+        $budi = DB::table('users')->where('email', 'budi@matlev.test')->value('id');
+        $andi = DB::table('users')->where('email', 'andi@matlev.test')->value('id');
+        $siti = DB::table('users')->where('email', 'siti@matlev.test')->value('id');
+        $admin = DB::table('users')->where('email', 'admin@matlev.test')->value('id');
+        $seedRequirements = DB::table('evidence_requirements')->orderBy('id')->limit(5)->get();
+
+        foreach ($seedRequirements as $index => $requirement) {
+            $status = ['pending', 'approved', 'rejected', 'approved', 'pending'][$index];
+            $owner = [$budi, $budi, $andi, $siti, $budi][$index];
+            $uploadId = DB::table('evidence_uploads')->insertGetId([
+                'maturity_level_id' => $requirement->maturity_level_id,
+                'evidence_requirement_id' => $requirement->id,
+                'user_id' => $owner,
+                'file_path' => 'evidence_pdfs/demo-' . $requirement->id . '.pdf',
+                'original_filename' => str_replace(' ', '_', $requirement->name) . '_2026.pdf',
+                'file_size' => 250000 + ($index * 50000),
+                'mime_type' => 'application/pdf',
+                'status' => $status,
+                'rejection_note' => $status === 'rejected' ? 'Dokumen belum memuat pengesahan dari pejabat terkait.' : null,
+                'uploaded_at' => now()->subDays(5 - $index),
+                'reviewed_at' => $status === 'pending' ? null : now()->subDays(4 - $index),
+                'reviewed_by' => $status === 'pending' ? null : $admin,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            if ($index === 2) {
+                DB::table('evidence_revisions')->insert([
+                    ['evidence_upload_id' => $uploadId, 'user_id' => $andi, 'version_number' => 1, 'file_path' => 'evidence_pdfs/demo-original.pdf', 'original_filename' => 'RKAP_K3_2026.pdf', 'status' => 'rejected', 'rejection_note' => 'Dokumen belum memuat pengesahan.', 'is_current' => false, 'uploaded_at' => now()->subDays(4), 'created_at' => $now, 'updated_at' => $now],
+                    ['evidence_upload_id' => $uploadId, 'user_id' => $andi, 'version_number' => 2, 'file_path' => 'evidence_pdfs/demo-revision.pdf', 'original_filename' => 'RKAP_K3_2026_REV1.pdf', 'status' => 'approved', 'rejection_note' => null, 'is_current' => true, 'uploaded_at' => now()->subDays(2), 'created_at' => $now, 'updated_at' => $now],
+                ]);
+            }
+        }
+
+        $permissionUpload = DB::table('evidence_uploads')->where('user_id', $budi)->first();
+        if ($permissionUpload) {
+            DB::table('document_permission_requests')->insert([
+                ['evidence_upload_id' => $permissionUpload->id, 'owner_id' => $budi, 'requester_id' => $andi, 'reason' => 'Dokumen perlu diperbarui karena terdapat revisi terbaru.', 'action' => 'edit', 'status' => 'pending', 'responded_at' => null, 'created_at' => $now, 'updated_at' => $now],
+                ['evidence_upload_id' => $permissionUpload->id, 'owner_id' => $budi, 'requester_id' => $siti, 'reason' => 'Pembaruan dokumen unit.', 'action' => 'edit', 'status' => 'approved', 'responded_at' => $now, 'created_at' => $now, 'updated_at' => $now],
+                ['evidence_upload_id' => $permissionUpload->id, 'owner_id' => $budi, 'requester_id' => $siti, 'reason' => 'Penggantian berkas lama.', 'action' => 'edit', 'status' => 'rejected', 'responded_at' => $now, 'created_at' => $now, 'updated_at' => $now],
+            ]);
+
+            DB::table('app_notifications')->insert([
+                ['recipient_id' => $budi, 'type' => 'permission_request', 'title' => 'Permintaan izin', 'message' => 'Andi Pratama meminta izin mengganti dokumen.', 'document_id' => $permissionUpload->id, 'request_id' => DB::table('document_permission_requests')->where('requester_id', $andi)->where('status', 'pending')->value('id'), 'target_url' => route('user.kriteria', ['level' => $permissionUpload->maturity_level_id]), 'is_read' => false, 'created_at' => $now, 'updated_at' => $now],
+                ['recipient_id' => $andi, 'type' => 'evaluation', 'title' => 'Evidence ditolak', 'message' => 'Dokumen memerlukan revisi.', 'document_id' => $permissionUpload->id, 'request_id' => null, 'target_url' => route('user.kriteria', ['level' => $permissionUpload->maturity_level_id]), 'is_read' => false, 'created_at' => $now, 'updated_at' => $now],
+            ]);
+        }
     }
 }

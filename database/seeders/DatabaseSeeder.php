@@ -45,6 +45,19 @@ class DatabaseSeeder extends Seeder
             'unit_kerja' => 'UP2D Suluttenggo',
         ]);
 
+        foreach ([
+            ['email' => 'budi@matlev.test', 'name' => 'Budi Santoso'],
+            ['email' => 'andi@matlev.test', 'name' => 'Andi Pratama'],
+            ['email' => 'siti@matlev.test', 'name' => 'Siti Rahma'],
+        ] as $account) {
+            User::updateOrCreate(['email' => $account['email']], [
+                'name' => $account['name'],
+                'password' => Hash::make('password123'),
+                'role' => 'user',
+                'unit_kerja' => 'UP2D Suluttenggo',
+            ]);
+        }
+
         // Panggil MatlevSeeder di sini
         $this->call([
             MatlevSeeder::class,

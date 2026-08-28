@@ -18,6 +18,7 @@ class DocumentPermissionController extends Controller
     {
         $validated = $request->validate([
             'action' => 'required|in:edit',
+            'reason' => 'nullable|string|max:1000',
         ]);
 
         abort_if($upload->user_id === Auth::id(), 422, 'Pemilik dokumen tidak perlu meminta izin.');
@@ -29,7 +30,7 @@ class DocumentPermissionController extends Controller
                 'action' => $validated['action'],
                 'status' => 'pending',
             ],
-            ['owner_id' => $upload->user_id]
+            ['owner_id' => $upload->user_id, 'reason' => $validated['reason'] ?? null]
         );
 
         ActivityLog::create([
@@ -47,7 +48,7 @@ class DocumentPermissionController extends Controller
             'recipient_id' => $upload->user_id,
             'type' => 'permission_request',
             'title' => 'Permintaan izin dokumen',
-            'message' => Auth::user()->name . ' meminta izin mengganti ' . $upload->original_filename . '.',
+            'message' => Auth::user()->name . ' meminta izin mengganti ' . $upload->original_filename . ($permissionRequest->reason ? ': ' . $permissionRequest->reason : '.'),
             'document_id' => $upload->id,
             'request_id' => $permissionRequest->id,
             'target_url' => route('user.kriteria', ['level' => $upload->maturity_level_id]) . '#level-' . $upload->maturity_level_id,

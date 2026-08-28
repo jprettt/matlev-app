@@ -25,6 +25,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
         Route::post('/notifications/read-all', [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
         Route::post('/upload/{maturityLevelId}', [MatlevController::class, 'upload'])->name('matlev.upload');
+        Route::post('/evidence-requirements/{requirement}/upload', [MatlevController::class, 'uploadEvidenceRequirement'])->name('evidence.upload');
         Route::delete('/documents/revisions/{revision}', [DocumentPermissionController::class, 'destroyRevision'])->name('documents.revisions.delete');
         Route::post('/documents/{upload}/permission', [DocumentPermissionController::class, 'request'])->name('documents.permission.request');
         Route::delete('/documents/{upload}', [DocumentPermissionController::class, 'destroy'])->name('documents.delete');
