@@ -199,7 +199,16 @@
                                                     @foreach($lvl->evidenceUploads as $fileUpload)
                                                         <div class="flex items-center justify-between gap-2 rounded-lg border border-stone-200 bg-stone-50 px-2 py-1.5 text-[10px]">
                                                             <a href="{{ asset('storage/' . $fileUpload->file_path) }}" target="_blank" class="min-w-0 truncate font-semibold text-stone-700 hover:text-pln-800 hover:underline" title="{{ $fileUpload->original_filename }}">{{ $fileUpload->original_filename }}</a>
-                                                            <span class="shrink-0 rounded px-1.5 py-0.5 font-bold {{ $fileUpload->status === 'approved' ? 'bg-emerald-100 text-emerald-800' : ($fileUpload->status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">{{ $fileUpload->status === 'approved' ? 'Disetujui' : ($fileUpload->status === 'rejected' ? 'Ditolak' : 'Menunggu') }}</span>
+                                                            <div class="flex shrink-0 items-center gap-1">
+                                                                <span class="rounded px-1.5 py-0.5 font-bold {{ $fileUpload->status === 'approved' ? 'bg-emerald-100 text-emerald-800' : ($fileUpload->status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800') }}">{{ $fileUpload->status === 'approved' ? 'Disetujui' : ($fileUpload->status === 'rejected' ? 'Ditolak' : 'Menunggu') }}</span>
+                                                                @if($fileUpload->status !== 'approved' && $fileUpload->status !== 'rejected' && (int) $fileUpload->user_id === (int) Auth::id())
+                                                                    <form action="{{ route('documents.delete', $fileUpload) }}" method="POST" onsubmit="return confirm('Hapus file {{ addslashes($fileUpload->original_filename) }}?')">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" class="rounded px-1.5 py-0.5 font-bold text-rose-700 hover:bg-rose-100" title="Hapus file ini">Hapus</button>
+                                                                    </form>
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                     @endforeach
                                                 </div>
@@ -354,7 +363,7 @@
                                                             </div>
                                                         </div>
                                                     @endif
-                                                    @if($canReplace && $document->status !== 'approved')
+                                                    @if($canReplace && $document->status !== 'approved' && ! $isOwner)
                                                         @if($myPermission)
                                                             <p class="text-[10px] text-emerald-700 font-bold">Izin pemilik disetujui untuk mengganti dokumen.</p>
                                                         @endif
