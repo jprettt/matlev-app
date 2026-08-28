@@ -8,6 +8,7 @@ use App\Models\EvidenceUpload;
 use App\Models\DocumentPermissionRequest;
 use App\Models\EvidenceRevision;
 use App\Models\EvidenceRequirement;
+use App\Models\EvidenceSlot;
 use App\Models\ActivityLog;
 use App\Models\AppNotification;
 use App\Models\User;
@@ -32,6 +33,9 @@ class MatlevController extends Controller
             'subKriterias.maturityLevels.evidenceRequirements.evidenceUploads.user',
             'subKriterias.maturityLevels.evidenceRequirements.evidenceUploads.permissionRequests.requester',
             'subKriterias.maturityLevels.evidenceRequirements.evidenceUploads.revisions.user',
+            'subKriterias.maturityLevels.evidenceRequirements.slots.currentEvidence.user',
+            'subKriterias.maturityLevels.evidenceRequirements.slots.currentEvidence.revisions.user',
+            'subKriterias.maturityLevels.evidenceRequirements.slots.currentEvidence.permissionRequests.requester',
         ])->get();
         $pendingPermissionRequests = DocumentPermissionRequest::with(['evidenceUpload.maturityLevel.subkriteria.kriteria', 'requester'])
             ->where('owner_id', Auth::id())
@@ -312,6 +316,9 @@ class MatlevController extends Controller
                         'file_path' => $path,
                         'original_filename' => $file->getClientOriginalName(),
                         'status' => 'pending',
+                        'version' => 1,
+                        'submitted_at' => now(),
+                        'is_current' => true,
                         'uploaded_at' => now(),
                         ]);
                     }
@@ -352,15 +359,23 @@ class MatlevController extends Controller
 
     public function uploadEvidenceRequirement(Request $request, EvidenceRequirement $requirement)
     {
+        $slot = $requirement->slots()->firstOrFail();
+
+        return $this->uploadEvidenceSlot($request, $slot);
+    }
+
+    public function uploadEvidenceSlot(Request $request, EvidenceSlot $slot)
+    {
+        $requirement = $slot->evidenceRequirement()->with('maturityLevel.subkriteria.kriteria')->firstOrFail();
         $request->validate([
-            'document' => 'required|file|mimes:' . strtolower($requirement->allowed_file_type) . '|max:' . $requirement->max_file_size,
+            'document' => 'required|file|mimes:' . strtolower($requirement->allowed_file_types ?: $requirement->allowed_file_type) . '|max:' . $requirement->max_file_size,
         ], [
-            'document.mimes' => 'File harus berformat ' . strtoupper($requirement->allowed_file_type) . '.',
+            'document.mimes' => 'File harus berformat ' . strtoupper($requirement->allowed_file_types ?: $requirement->allowed_file_type) . '.',
             'document.max' => 'Ukuran file maksimum ' . round($requirement->max_file_size / 1024, 1) . ' MB.',
         ]);
 
         $level = $requirement->maturityLevel()->with('evidenceUploads')->firstOrFail();
-        $existing = $requirement->evidenceUploads()->latest('id')->first();
+        $existing = $slot->currentEvidence()->latest('id')->first();
         $isRevisionUpload = (bool) $existing;
         $isOwner = $existing && (int) $existing->user_id === (int) Auth::id();
         $permission = $existing?->permissionRequests()
@@ -387,6 +402,7 @@ class MatlevController extends Controller
                 $existing = EvidenceUpload::create([
                     'maturity_level_id' => $requirement->maturity_level_id,
                     'evidence_requirement_id' => $requirement->id,
+                    'evidence_slot_id' => $slot->id,
                     'user_id' => Auth::id(),
                     'file_path' => $path,
                     'original_filename' => $file->getClientOriginalName(),
@@ -421,6 +437,10 @@ class MatlevController extends Controller
                     'mime_type' => $file->getMimeType(),
                     'status' => 'pending',
                     'rejection_note' => null,
+                        'rejection_reason' => null,
+                        'version' => $nextVersion,
+                        'submitted_at' => now(),
+                        'is_current' => true,
                     'uploaded_at' => now(),
                     'reviewed_at' => null,
                     'reviewed_by' => null,

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Support\UploadDetailImporter;
 
 class MatlevSeeder extends Seeder
 {
@@ -16,6 +17,7 @@ class MatlevSeeder extends Seeder
         DB::table('document_permission_requests')->truncate();
         DB::table('evidence_revisions')->truncate();
         DB::table('evidence_uploads')->truncate();
+        DB::table('evidence_slots')->truncate();
         DB::table('evidence_requirements')->truncate();
         DB::table('maturity_levels')->truncate();
         DB::table('sub_criterias')->truncate();
@@ -177,26 +179,14 @@ class MatlevSeeder extends Seeder
             ['sub_criteria_id' => 17, 'level' => 5, 'description' => "Seluruh Unit (Unit Induk, Unit Pelaksana dan Sub Unit Pelaksana) memiliki Mapping Hazard dan Risk berdasarkan hasil temuan dan tindaklanjut serta analisa risiko dalam aplikasi inspekta.\nMemiliki safety perfomance pyramid dan monitoring tindak lanjut temuan dan disampaikan ke seluruh bidang progress penyelesaiannya >90% temuan terselesaikan.\nMemiliki OFI dan AFI yang disusun bersama K3L dan bidang terkait.\nReporting Culture Indeks mencapai 95%", 'evidence_requirement' => null, 'created_at' => $now, 'updated_at' => $now],
         ]);
 
-        $requirements = [];
-        foreach (DB::table('maturity_levels')->orderBy('id')->get() as $level) {
-            $names = $level->level === 1
-                ? ['RKAP Bidang K3', 'Dokumen IBPPR', 'Bukti Pengesahan']
-                : ['Dokumen Program K3', 'Bukti Pelaksanaan', 'Laporan Evaluasi'];
-            foreach ($names as $sort => $name) {
-                $requirements[] = [
-                    'maturity_level_id' => $level->id,
-                    'name' => $name,
-                    'description' => 'Dokumen pendukung untuk membuktikan pemenuhan indikator Level ' . $level->level . '.',
-                    'is_required' => true,
-                    'allowed_file_type' => 'pdf',
-                    'max_file_size' => 10240,
-                    'sort_order' => $sort + 1,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            }
-        }
-        DB::table('evidence_requirements')->insert($requirements);
+        DB::table('maturity_levels')->whereNull('overall_description')->update([
+            'overall_description' => DB::raw('description'),
+        ]);
+        DB::table('maturity_levels')->whereNull('level_number')->update([
+            'level_number' => DB::raw('level'),
+        ]);
+
+        UploadDetailImporter::import(base_path('detail upload.xlsx'));
 
         $budi = DB::table('users')->where('email', 'budi@matlev.test')->value('id');
         $andi = DB::table('users')->where('email', 'andi@matlev.test')->value('id');
@@ -210,6 +200,7 @@ class MatlevSeeder extends Seeder
             $uploadId = DB::table('evidence_uploads')->insertGetId([
                 'maturity_level_id' => $requirement->maturity_level_id,
                 'evidence_requirement_id' => $requirement->id,
+                'evidence_slot_id' => DB::table('evidence_slots')->where('evidence_requirement_id', $requirement->id)->orderBy('sort_order')->value('id'),
                 'user_id' => $owner,
                 'file_path' => 'evidence_pdfs/demo-' . $requirement->id . '.pdf',
                 'original_filename' => str_replace(' ', '_', $requirement->name) . '_2026.pdf',
@@ -217,7 +208,11 @@ class MatlevSeeder extends Seeder
                 'mime_type' => 'application/pdf',
                 'status' => $status,
                 'rejection_note' => $status === 'rejected' ? 'Dokumen belum memuat pengesahan dari pejabat terkait.' : null,
+                'rejection_reason' => $status === 'rejected' ? 'Dokumen belum memuat pengesahan dari pejabat terkait.' : null,
+                'version' => 1,
                 'uploaded_at' => now()->subDays(5 - $index),
+                'submitted_at' => now()->subDays(5 - $index),
+                'is_current' => true,
                 'reviewed_at' => $status === 'pending' ? null : now()->subDays(4 - $index),
                 'reviewed_by' => $status === 'pending' ? null : $admin,
                 'created_at' => $now,

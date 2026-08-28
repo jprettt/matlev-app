@@ -27,6 +27,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/panduan', [MatlevController::class, 'panduan'])->name('user.panduan');
         Route::post('/upload/{maturityLevelId}', [MatlevController::class, 'upload'])->name('matlev.upload');
         Route::post('/evidence-requirements/{requirement}/upload', [MatlevController::class, 'uploadEvidenceRequirement'])->name('evidence.upload');
+        Route::post('/evidence-slots/{slot}/upload', [MatlevController::class, 'uploadEvidenceSlot'])->name('evidence.slot.upload');
         Route::delete('/documents/revisions/{revision}', [DocumentPermissionController::class, 'destroyRevision'])->name('documents.revisions.delete');
         Route::post('/documents/{upload}/permission', [DocumentPermissionController::class, 'request'])->name('documents.permission.request');
         Route::delete('/documents/{upload}', [DocumentPermissionController::class, 'destroy'])->name('documents.delete');

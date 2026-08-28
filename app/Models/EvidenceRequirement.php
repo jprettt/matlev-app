@@ -17,6 +17,10 @@ class EvidenceRequirement extends Model
         'allowed_file_type',
         'max_file_size',
         'sort_order',
+        'minimum_slots',
+        'maximum_slots',
+        'allowed_file_types',
+        'evidence_mode',
     ];
 
     protected $casts = [
@@ -33,6 +37,11 @@ class EvidenceRequirement extends Model
     public function evidenceUploads()
     {
         return $this->hasMany(EvidenceUpload::class);
+    }
+
+    public function slots()
+    {
+        return $this->hasMany(EvidenceSlot::class)->orderBy('sort_order');
     }
 
     public function currentEvidence()

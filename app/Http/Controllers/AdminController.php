@@ -85,11 +85,13 @@ class AdminController extends Controller
         ]);
 
         $upload = EvidenceUpload::findOrFail($id);
+        abort_if((int) $upload->user_id === (int) Auth::id(), 403, 'Reviewer tidak boleh menilai dokumen yang diunggah sendiri.');
         $statusBefore = $upload->status;
         $statusAfter = $request->status;
         $upload->update([
             'status' => $statusAfter,
             'rejection_note' => $statusAfter === 'rejected' ? ($request->rejection_note ?? 'Dokumen tidak sesuai dengan persyaratan.') : null,
+            'rejection_reason' => $statusAfter === 'rejected' ? ($request->rejection_note ?? 'Dokumen tidak sesuai dengan persyaratan.') : null,
             'reviewed_at' => now(),
             'reviewed_by' => Auth::id(),
         ]);

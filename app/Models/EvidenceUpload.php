@@ -14,16 +14,21 @@ class EvidenceUpload extends Model
     protected $fillable = [
         'maturity_level_id',
         'evidence_requirement_id',
+        'evidence_slot_id',
         'user_id',
         'file_path',
         'original_filename',
         'file_size',
         'mime_type',
+        'version',
         'status',
         'rejection_note',
+        'rejection_reason',
         'uploaded_at',
         'reviewed_at',
         'reviewed_by',
+        'submitted_at',
+        'is_current',
     ];
 
     /**
@@ -31,6 +36,10 @@ class EvidenceUpload extends Model
      */
     protected $casts = [
         'uploaded_at' => 'datetime',
+        'reviewed_at' => 'datetime',
+        'submitted_at' => 'datetime',
+        'is_current' => 'boolean',
+        'version' => 'integer',
     ];
 
     public function user()
@@ -46,6 +55,11 @@ class EvidenceUpload extends Model
     public function evidenceRequirement()
     {
         return $this->belongsTo(EvidenceRequirement::class);
+    }
+
+    public function evidenceSlot()
+    {
+        return $this->belongsTo(EvidenceSlot::class);
     }
 
     public function reviewer()
