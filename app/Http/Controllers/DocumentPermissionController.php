@@ -22,7 +22,7 @@ class DocumentPermissionController extends Controller
         ]);
 
         abort_if($upload->user_id === Auth::id(), 422, 'Pemilik dokumen tidak perlu meminta izin.');
-        abort_if($upload->status === 'approved', 422, 'Dokumen yang sudah disetujui tidak memerlukan permintaan izin mengganti.');
+        abort_if($upload->status !== 'pending', 422, 'Dokumen yang sudah dinilai tidak memerlukan permintaan izin mengganti.');
         $permissionRequest = DocumentPermissionRequest::updateOrCreate(
             [
                 'evidence_upload_id' => $upload->id,
@@ -65,6 +65,7 @@ class DocumentPermissionController extends Controller
 
         abort_unless($permissionRequest->owner_id === Auth::id(), 403);
         abort_unless($permissionRequest->status === 'pending', 422, 'Permintaan ini sudah diproses.');
+        abort_if($permissionRequest->evidenceUpload->status !== 'pending', 422, 'Dokumen sudah dinilai sehingga permintaan izin tidak berlaku lagi.');
 
         $permissionRequest->update([
             'status' => $validated['status'],

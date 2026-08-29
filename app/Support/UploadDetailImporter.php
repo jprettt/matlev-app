@@ -103,13 +103,20 @@ class UploadDetailImporter
                 if ($item['file_name'] === '-') {
                     continue;
                 }
+                $description = $item['description'];
+                if ($first['sub_code'] === '1.3' && $first['level'] === 2) {
+                    $description = 'Integrasi belum meliputi seluruh Unit Pelaksana.';
+                }
+                if ($first['sub_code'] === '1.3' && $first['level'] === 3) {
+                    $description = 'Integrasi telah meliputi seluruh Unit Pelaksana.';
+                }
                 preg_match('/(\d+)\s*x/i', $item['period'], $match);
                 $periods = max(1, (int) ($match[1] ?? 1));
                 $requirementOrder++;
                 $requirementId = DB::table('evidence_requirements')->insertGetId([
                     'maturity_level_id' => $level->id,
                     'name' => $item['file_name'],
-                    'description' => $item['description'],
+                    'description' => $description,
                     'is_required' => true,
                     'allowed_file_type' => 'pdf',
                     'allowed_file_types' => 'pdf',
@@ -125,7 +132,7 @@ class UploadDetailImporter
                     DB::table('evidence_slots')->insert([
                         'evidence_requirement_id' => $requirementId,
                         'name' => $periods > 1 ? 'Periode ' . $period : $item['file_name'],
-                        'description' => $periods > 1 ? 'Upload ' . $item['file_name'] . ' untuk periode ' . $period . '.' : $item['description'],
+                        'description' => $periods > 1 ? 'Upload ' . $item['file_name'] . ' untuk periode ' . $period . '.' : $description,
                         'is_required' => true,
                         'sort_order' => $period,
                         'created_at' => now(),

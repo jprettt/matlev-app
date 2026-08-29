@@ -8,6 +8,7 @@ use App\Models\AppNotification;
 use App\Models\Kriteria;
 use App\Models\MaturityLevel;
 use App\Models\Subkriteria;
+use App\Models\DocumentPermissionRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -95,6 +96,15 @@ class AdminController extends Controller
             'reviewed_at' => now(),
             'reviewed_by' => Auth::id(),
         ]);
+
+        if (in_array($statusAfter, ['approved', 'rejected'], true)) {
+            DocumentPermissionRequest::where('evidence_upload_id', $upload->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'rejected',
+                    'responded_at' => now(),
+                ]);
+        }
 
         ActivityLog::create([
             'evidence_upload_id' => $upload->id,

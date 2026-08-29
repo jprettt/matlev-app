@@ -28,6 +28,11 @@ class MaturityLevel extends Model
 
     public function getComputedStatusAttribute(): string
     {
+        return $this->statusForUser(null);
+    }
+
+    public function statusForUser(?int $userId = null): string
+    {
         if (strtoupper((string) $this->evidence_mode) === 'NONE') {
             return 'COMPLETED';
         }
@@ -38,23 +43,17 @@ class MaturityLevel extends Model
             return 'NOT_STARTED';
         }
 
-        $uploads = $slots->map(fn ($slot) => $slot->currentEvidence)->filter();
+        $uploads = $slots->map(fn ($slot) => $this->currentUploadForUser($slot, $userId))->filter();
         if ($uploads->contains('status', 'rejected')) {
             return 'NEEDS_REVISION';
         }
         if ($uploads->contains('status', 'pending')) {
             return 'UNDER_REVIEW';
         }
-        $requirementsCompleted = $requirements->every(function ($requirement) {
-            $approvedCount = $requirement->slots
-                ->map(fn ($slot) => $slot->currentEvidence)
-                ->filter(fn ($upload) => $upload?->status === 'approved')
-                ->count();
-            $minimum = $requirement->evidence_mode === 'REPEATABLE'
-                ? (int) $requirement->minimum_slots
-                : $requirement->slots->where('is_required', true)->count();
-
-            return $approvedCount >= max(1, $minimum);
+        $requirementsCompleted = $requirements->every(function ($requirement) use ($userId) {
+            return $requirement->slots->every(fn ($slot) =>
+                $this->currentUploadForUser($slot, $userId)?->status === 'approved'
+            );
         });
 
         if ($requirementsCompleted) {
@@ -62,6 +61,47 @@ class MaturityLevel extends Model
         }
 
         return 'NOT_STARTED';
+    }
+
+    public function scoreForUser(?int $userId): int
+    {
+        if (strtoupper((string) $this->evidence_mode) === 'NONE') {
+            return (int) ($this->level_number ?: $this->level);
+        }
+
+        return $this->statusForUser($userId) === 'COMPLETED'
+            ? (int) ($this->level_number ?: $this->level)
+            : 0;
+    }
+
+    public function hasAllRequiredFiles(): bool
+    {
+        if (strtoupper((string) $this->evidence_mode) === 'NONE') {
+            return true;
+        }
+
+        $requirements = $this->evidenceRequirements;
+        $slots = $requirements->flatMap(fn ($requirement) => $requirement->slots);
+        if ($slots->isEmpty()) {
+            return $this->evidenceUploads()->exists();
+        }
+
+        return $requirements->every(fn ($requirement) =>
+            $requirement->slots->every(fn ($slot) => $slot->evidenceUploads()->exists())
+        );
+    }
+
+    public function currentUploadForUser(EvidenceSlot $slot, ?int $userId): ?EvidenceUpload
+    {
+        $uploads = $slot->relationLoaded('evidenceUploads')
+            ? $slot->evidenceUploads
+            : $slot->evidenceUploads()->get();
+
+        if ($userId !== null) {
+            $uploads = $uploads->where('user_id', $userId);
+        }
+
+        return $uploads->sortByDesc('id')->first();
     }
 
     public function subkriteria()

@@ -6,6 +6,8 @@ use App\Models\DocumentPermissionRequest;
 use App\Models\ActivityLog;
 use App\Models\EvidenceUpload;
 use App\Models\EvidenceRevision;
+use App\Models\EvidenceRequirement;
+use App\Models\EvidenceSlot;
 use App\Models\Kriteria;
 use App\Models\MaturityLevel;
 use App\Models\Subkriteria;
@@ -128,6 +130,30 @@ class RoleAccessTest extends TestCase
         ]);
     }
 
+    public function test_pending_permission_is_invalidated_when_admin_reviews_file(): void
+    {
+        [$owner, $other, $upload] = $this->createDocumentFixture();
+        $upload->update(['status' => 'pending']);
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($other)
+            ->post(route('documents.permission.request', $upload), ['action' => 'edit'])
+            ->assertSessionHas('success');
+        $permission = DocumentPermissionRequest::firstOrFail();
+
+        $this->actingAs($admin)
+            ->post(route('admin.verify', $upload), ['status' => 'approved'])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('document_permission_requests', [
+            'id' => $permission->id,
+            'status' => 'rejected',
+        ]);
+        $this->actingAs($owner)
+            ->post(route('documents.permission.respond', $permission), ['status' => 'approved'])
+            ->assertStatus(422);
+    }
+
     public function test_other_user_cannot_request_delete_permission_or_delete_document(): void
     {
         Storage::fake('public');
@@ -173,6 +199,46 @@ class RoleAccessTest extends TestCase
 
         $this->assertDatabaseHas('evidence_uploads', [
             'maturity_level_id' => $levelTwo->id,
+            'original_filename' => 'level-2.pdf',
+        ]);
+    }
+
+    public function test_scores_use_highest_completed_level_and_criteria_average(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $criteria = Kriteria::create(['code' => 'K1', 'title' => 'Kriteria']);
+        $subOne = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K1.1', 'title' => 'Sub Satu']);
+        $subTwo = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K1.2', 'title' => 'Sub Dua']);
+
+        foreach ([$subOne, $subTwo] as $sub) {
+            $level = MaturityLevel::create(['sub_criteria_id' => $sub->id, 'level' => 3, 'evidence_mode' => 'REQUIRED']);
+            $requirement = EvidenceRequirement::create(['maturity_level_id' => $level->id, 'name' => 'Bukti', 'allowed_file_type' => 'pdf', 'max_file_size' => 10240]);
+            $slot = EvidenceSlot::create(['evidence_requirement_id' => $requirement->id, 'name' => 'Slot', 'is_required' => true]);
+            EvidenceUpload::create(['maturity_level_id' => $level->id, 'evidence_requirement_id' => $requirement->id, 'evidence_slot_id' => $slot->id, 'user_id' => $user->id, 'file_path' => 'proof.pdf', 'original_filename' => 'proof.pdf', 'status' => 'approved', 'uploaded_at' => now()]);
+        }
+
+        $this->assertSame(3, $subOne->fresh()->scoreForUser($user->id));
+        $this->assertSame(3.0, $criteria->fresh()->scoreForUser($user->id));
+    }
+
+    public function test_previous_level_upload_is_shared_between_users(): void
+    {
+        Storage::fake('public');
+        $owner = User::factory()->create(['role' => 'user']);
+        $requester = User::factory()->create(['role' => 'user']);
+        $criteria = Kriteria::create(['code' => 'K1', 'title' => 'Kriteria']);
+        $subcriteria = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K1.1', 'title' => 'Sub Kriteria']);
+        $levelOne = MaturityLevel::create(['sub_criteria_id' => $subcriteria->id, 'level' => 1, 'evidence_requirement' => 'PDF']);
+        $levelTwo = MaturityLevel::create(['sub_criteria_id' => $subcriteria->id, 'level' => 2, 'evidence_requirement' => 'PDF']);
+        EvidenceUpload::create(['maturity_level_id' => $levelOne->id, 'user_id' => $owner->id, 'file_path' => 'owner.pdf', 'original_filename' => 'owner.pdf', 'status' => 'approved', 'uploaded_at' => now()]);
+
+        $this->actingAs($requester)
+            ->post(route('matlev.upload', $levelTwo), ['pdf_file' => UploadedFile::fake()->create('level-2.pdf', 10, 'application/pdf')])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('evidence_uploads', [
+            'maturity_level_id' => $levelTwo->id,
+            'user_id' => $requester->id,
             'original_filename' => 'level-2.pdf',
         ]);
     }

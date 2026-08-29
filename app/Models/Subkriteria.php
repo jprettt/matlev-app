@@ -22,4 +22,10 @@ class Subkriteria extends Model
     {
         return $this->belongsTo(Kriteria::class, 'criteria_id');
     }
+
+    public function scoreForUser(?int $userId = null): int
+    {
+        return (int) $this->maturityLevels
+            ->max(fn ($level) => $level->scoreForUser($userId));
+    }
 }

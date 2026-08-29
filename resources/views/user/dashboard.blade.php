@@ -6,6 +6,8 @@
 <div x-data="{
     activeSlide: 1,
     totalSlides: 3,
+    criteriaSlide: 1,
+    totalCriteriaSlides: {{ $criterias->count() }},
     timer: null,
     startAutoPlay() {
         this.timer = setInterval(() => { this.nextSlide(); }, 6000);
@@ -18,6 +20,12 @@
     },
     prevSlide() {
         this.activeSlide = this.activeSlide === 1 ? this.totalSlides : this.activeSlide - 1;
+    },
+    nextCriteria() {
+        this.criteriaSlide = this.criteriaSlide === this.totalCriteriaSlides ? 1 : this.criteriaSlide + 1;
+    },
+    prevCriteria() {
+        this.criteriaSlide = this.criteriaSlide === 1 ? this.totalCriteriaSlides : this.criteriaSlide - 1;
     },
     scrollToIkhtisar() {
         document.getElementById('ikhtisar-kriteria')?.scrollIntoView({ behavior: 'smooth' });
@@ -98,22 +106,28 @@
                             <div class="absolute -right-8 -bottom-8 w-40 h-40 bg-pln-700/50 rounded-full blur-2xl pointer-events-none"></div>
                             <div class="absolute top-4 right-4 w-16 h-1 bg-accent-400 rounded-full"></div>
                             
-                            <div class="flex items-center justify-between mb-6">
-                                <span class="text-xs font-semibold uppercase tracking-widest text-pln-300">Status Akun</span>
-                                <span class="bg-accent-400 text-pln-900 text-[10px] font-bold px-2.5 py-1 rounded uppercase">{{ Auth::user()->role ?? 'User' }}</span>
+                            <div class="flex items-center justify-between mb-5">
+                                <span class="text-xs font-semibold uppercase tracking-widest text-pln-300">Ringkasan Nilai Kriteria</span>
+                                <span class="bg-accent-400 text-pln-900 text-[10px] font-bold px-2.5 py-1 rounded uppercase">0–5</span>
                             </div>
-                            <p class="text-2xl sm:text-3xl font-extrabold font-display mb-1">{{ Auth::user()->name ?? 'User' }}</p>
-                            <p class="text-sm text-pln-300 mb-8 truncate">{{ Auth::user()->email ?? 'user@pln.co.id' }}</p>
-                            
-                            <div class="grid grid-cols-2 gap-4 pt-5 border-t border-white/15">
-                                <div>
-                                    <span class="text-pln-400 block text-[11px] mb-1">Total Diunggah</span>
-                                    <span class="font-extrabold text-xl text-white">{{ $stats['totalUploaded'] }} <span class="text-sm font-medium text-pln-300">Berkas</span></span>
-                                </div>
-                                <div>
-                                    <span class="text-pln-400 block text-[11px] mb-1">Pencapaian Valid</span>
-                                    <span class="font-extrabold text-xl text-accent-400">{{ $stats['globalPercent'] }}% <span class="text-sm font-medium text-pln-300">Selesai</span></span>
-                                </div>
+                            <div class="relative min-h-[250px] overflow-hidden">
+                                @foreach($criterias as $criteria)
+                                    @php $criteriaScore = $criteria->scoreForUser(); $criteriaPercent = round(($criteriaScore / 5) * 100); @endphp
+                                    <div x-cloak x-show="criteriaSlide === {{ $loop->iteration }}" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-x-5" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-5" class="absolute inset-0 flex min-h-[250px] flex-col">
+                                        <p class="text-3xl font-extrabold text-white">{{ $criteria->code }}</p>
+                                        <h3 class="mt-3 min-h-[56px] font-display text-xl font-extrabold leading-tight text-white">{{ $criteria->title }}</h3>
+                                        <div class="mt-auto">
+                                            <div class="flex items-end justify-between gap-3"><span class="text-xs text-pln-300">Nilai Kriteria</span><span class="text-3xl font-extrabold text-accent-400">{{ number_format($criteriaScore, 2) }}<span class="text-sm text-pln-300"> / 5</span></span></div>
+                                            <div class="mt-2 h-2 overflow-hidden rounded-full bg-white/15"><div class="h-full rounded-full bg-accent-400" style="width: {{ $criteriaPercent }}%"></div></div>
+                                            <a href="{{ route('user.kriteria', ['criteria_id' => $criteria->id]) }}" class="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-accent-400 px-4 py-3 text-sm font-extrabold text-pln-950 transition hover:bg-accent-300">Buka {{ $criteria->code }} <span class="ml-2">&rarr;</span></a>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <div class="mt-5 flex items-center justify-between border-t border-white/15 pt-4">
+                                <button type="button" @click="prevCriteria()" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-lg text-white transition hover:bg-white/10" aria-label="Kriteria sebelumnya">&larr;</button>
+                                <div class="flex items-center gap-1.5">@foreach($criterias as $criteria)<button type="button" @click="criteriaSlide={{ $loop->iteration }}" :class="criteriaSlide === {{ $loop->iteration }} ? 'bg-accent-400' : 'bg-white/30'" class="h-1.5 w-5 rounded-full" aria-label="Kriteria {{ $criteria->code }}"></button>@endforeach</div>
+                                <button type="button" @click="nextCriteria()" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-lg text-white transition hover:bg-white/10" aria-label="Kriteria berikutnya">&rarr;</button>
                             </div>
                         </div>
                     </div>
@@ -305,15 +319,8 @@
             <div class="space-y-3">
                 @forelse($criterias as $criteria)
                     @php
-                        $critSlots = 0;
-                        $critApproved = 0;
-                        foreach($criteria->subKriterias as $sub) {
-                            foreach($sub->maturityLevels as $lvl) {
-                                $critSlots++;
-                                if($lvl->evidenceUpload && $lvl->evidenceUpload->status == 'approved') $critApproved++;
-                            }
-                        }
-                        $critPercent = $critSlots > 0 ? round(($critApproved / $critSlots) * 100) : 0;
+                        $critScore = $criteria->scoreForUser();
+                        $critPercent = round(($critScore / 5) * 100);
                     @endphp
 
                     <div class="bg-gray-50 p-5 rounded-xl border border-gray-100 hover:border-pln-200 hover:bg-pln-50/30 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -327,7 +334,7 @@
                                 </h3>
                             </div>
                             <p class="text-xs text-gray-500">
-                                {{ count($criteria->subKriterias) }} Sub Kriteria • {{ $critApproved }} / {{ $critSlots }} Level Selesai
+                                {{ count($criteria->subKriterias) }} Sub Kriteria • Nilai Kriteria {{ number_format($critScore, 2) }} / 5
                             </p>
                         </div>
 

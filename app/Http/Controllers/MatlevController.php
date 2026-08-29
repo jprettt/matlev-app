@@ -36,6 +36,8 @@ class MatlevController extends Controller
             'subKriterias.maturityLevels.evidenceRequirements.slots.currentEvidence.user',
             'subKriterias.maturityLevels.evidenceRequirements.slots.currentEvidence.revisions.user',
             'subKriterias.maturityLevels.evidenceRequirements.slots.currentEvidence.permissionRequests.requester',
+            'subKriterias.maturityLevels.evidenceRequirements.slots.evidenceUploads.user',
+            'subKriterias.maturityLevels.evidenceRequirements.slots.evidenceUploads.revisions.user',
         ])->get();
         $pendingPermissionRequests = DocumentPermissionRequest::with(['evidenceUpload.maturityLevel.subkriteria.kriteria', 'requester'])
             ->where('owner_id', Auth::id())
@@ -198,6 +200,15 @@ class MatlevController extends Controller
     {
         $data = $this->getStatsAndData();
         $data['activityLogs'] = ActivityLog::with(['actor', 'targetUser', 'maturityLevel.subkriteria'])
+            ->whereIn('activity_type', [
+                'upload',
+                'delete',
+                'permission_request',
+                'permission_granted',
+                'evaluation',
+                'revision_upload',
+            ])
+            ->whereHas('actor', fn ($query) => $query->whereIn('role', ['user', 'admin']))
             ->orderByDesc('occurred_at')
             ->get();
 
@@ -251,7 +262,7 @@ class MatlevController extends Controller
                 ->with('evidenceUploads')
                 ->first();
 
-            if (! $previousLevel || $previousLevel->evidenceUploads->isEmpty()) {
+            if (! $previousLevel || ! $previousLevel->hasAllRequiredFiles()) {
                 return redirect($uploadPage)->with('error', 'Anda wajib mengunggah dokumen Level ' . ($maturityLevel->level - 1) . ' terlebih dahulu.');
             }
         }
@@ -367,6 +378,7 @@ class MatlevController extends Controller
     public function uploadEvidenceSlot(Request $request, EvidenceSlot $slot)
     {
         $requirement = $slot->evidenceRequirement()->with('maturityLevel.subkriteria.kriteria')->firstOrFail();
+        $this->ensurePreviousLevelHasUpload($requirement->maturityLevel);
         $request->validate([
             'document' => 'required|file|mimes:' . strtolower($requirement->allowed_file_types ?: $requirement->allowed_file_type) . '|max:' . $requirement->max_file_size,
         ], [
@@ -386,18 +398,18 @@ class MatlevController extends Controller
             ->latest('responded_at')
             ->first();
 
-        if ($existing && $existing->status !== 'rejected') {
+        if ($existing && $existing->status === 'approved') {
             return back()->withErrors(['document' => 'Evidence ini sudah memiliki file aktif dan tidak dapat diganti saat berstatus ' . $existing->status . '.']);
         }
 
-        if ($existing && ! $isOwner && ! $permission) {
+        if ($existing && $existing->status !== 'rejected' && ! $isOwner && ! $permission) {
             abort(403, 'Anda belum mendapat izin untuk mengganti evidence ini.');
         }
 
         $file = $request->file('document');
         $path = $file->storeAs('evidence_pdfs', uniqid('', true) . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName()), 'public');
 
-        DB::transaction(function () use ($existing, $requirement, $file, $path, $permission) {
+        DB::transaction(function () use ($existing, $requirement, $slot, $file, $path, $permission) {
             if (! $existing) {
                 $existing = EvidenceUpload::create([
                     'maturity_level_id' => $requirement->maturity_level_id,
@@ -474,6 +486,22 @@ class MatlevController extends Controller
 
         return redirect()->route('user.kriteria', ['criteria_id' => $criteriaId])
             ->with('success', 'Evidence berhasil dikirim dan sedang menunggu penilaian.');
+    }
+
+    private function ensurePreviousLevelHasUpload(MaturityLevel $level): void
+    {
+        if ($level->level <= 1) {
+            return;
+        }
+
+        $previousLevel = MaturityLevel::where('sub_criteria_id', $level->sub_criteria_id)
+            ->where('level', $level->level - 1)
+            ->with('evidenceUploads')
+            ->first();
+
+        if (! $previousLevel || ! $previousLevel->hasAllRequiredFiles()) {
+            abort(422, 'Anda wajib mengisi bukti Level ' . ($level->level - 1) . ' terlebih dahulu.');
+        }
     }
 
     public function exportReceipt()
