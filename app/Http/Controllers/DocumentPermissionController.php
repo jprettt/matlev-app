@@ -111,10 +111,12 @@ class DocumentPermissionController extends Controller
     public function destroy(EvidenceUpload $upload)
     {
         abort_if($upload->status === 'approved', 422, 'Dokumen yang sudah disetujui tidak dapat dihapus.');
-        abort_if($upload->status === 'rejected', 422, 'Dokumen ditolak harus tetap tercatat sampai pemilik atau user mengirim revisi.');
 
         $permission = $this->usablePermission($upload, 'edit');
         abort_unless($upload->user_id === Auth::id() || $permission, 403, 'Anda belum mendapat izin untuk menghapus dokumen ini.');
+
+        $maturityLevelId = $upload->maturity_level_id;
+        $evidenceRequirementId = $upload->evidence_requirement_id ?? $upload->evidenceRequirement?->id;
 
         Storage::disk('public')->delete($upload->file_path);
         ActivityLog::create([
@@ -130,7 +132,12 @@ class DocumentPermissionController extends Controller
         }
         $upload->delete();
 
-        return back()->with('success', 'Dokumen berhasil dihapus.');
+        // Redirect ke halaman kriteria yang sama (tetap di level yang sama)
+        $redirectUrl = $evidenceRequirementId
+            ? route('user.kriteria', ['level' => $maturityLevelId, 'requirement' => $evidenceRequirementId]) . '#requirement-' . $evidenceRequirementId
+            : route('user.kriteria', ['level' => $maturityLevelId]) . '#level-' . $maturityLevelId;
+
+        return redirect($redirectUrl)->with('success', 'Dokumen berhasil dihapus.');
     }
 
     public function destroyRevision(EvidenceRevision $revision)
@@ -145,6 +152,9 @@ class DocumentPermissionController extends Controller
 
         abort_if($revision->status === 'deleted', 422, 'Riwayat revisi ini sudah dihapus.');
         abort_if($revision->is_current && $upload->status === 'rejected', 422, 'File aktif yang membutuhkan revisi tidak dapat dihapus dari riwayat.');
+
+        $maturityLevelId = $upload->maturity_level_id;
+        $evidenceRequirementId = $upload->evidence_requirement_id ?? $upload->evidenceRequirement?->id;
 
         Storage::disk('public')->delete($revision->file_path);
         ActivityLog::create([
@@ -182,7 +192,12 @@ class DocumentPermissionController extends Controller
             }
         }
 
-        return back()->with('success', 'File revisi dihapus dan tetap tercatat di riwayat.');
+        // Redirect ke halaman kriteria yang sama (tetap di level yang sama)
+        $redirectUrl = $evidenceRequirementId
+            ? route('user.kriteria', ['level' => $maturityLevelId, 'requirement' => $evidenceRequirementId]) . '#requirement-' . $evidenceRequirementId
+            : route('user.kriteria', ['level' => $maturityLevelId]) . '#level-' . $maturityLevelId;
+
+        return redirect($redirectUrl)->with('success', 'File revisi dihapus dan tetap tercatat di riwayat.');
     }
 
     private function usablePermission(EvidenceUpload $upload, string $action): ?DocumentPermissionRequest

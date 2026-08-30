@@ -12,10 +12,10 @@
 @endphp
 
 <div class="space-y-6">
-    <div class="py-2">
-            <p class="text-xs uppercase tracking-[0.2em] text-amber-800 font-bold">Ruang Kerja Verifikator</p>
-            <h1 class="text-2xl sm:text-3xl font-extrabold font-display mt-2">Dashboard Verifikasi Dokumen</h1>
-            <p class="text-sm text-stone-700 mt-2">Pantau beban kerja harian verifikator dan dokumen yang butuh tindak lanjut prioritas.</p>
+    <div class="py-2 text-stone-950">
+        <p class="text-xs uppercase tracking-[0.2em] text-amber-950 font-bold">Ruang Kerja Verifikator</p>
+        <h1 class="text-2xl font-extrabold font-display mt-2">Dashboard Verifikasi Dokumen</h1>
+        <p class="text-sm text-amber-950/80 mt-1">Pantau beban kerja harian verifikator dan dokumen yang butuh tindak lanjut prioritas.</p>
     </div>
 
     @if(session('success'))

@@ -10,6 +10,28 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
+        window.addEventListener('load', () => {
+            const viewport = { width: window.innerWidth, height: window.innerHeight };
+            const isLgScreen = window.innerWidth >= 1024;
+            const asides = document.querySelectorAll('aside');
+            
+            console.log('=== SIDEBAR DEBUG ===');
+            console.log('Viewport:', viewport.width + 'x' + viewport.height);
+            console.log('Is LG Screen (>= 1024px):', isLgScreen);
+            console.log('Total aside elements found:', asides.length);
+            
+            asides.forEach((aside, index) => {
+                const style = window.getComputedStyle(aside);
+                console.log(`Aside ${index}:`, {
+                    display: style.display,
+                    visibility: style.visibility,
+                    width: style.width,
+                    classes: aside.className
+                });
+            });
+        });
+    </script>
+    <script>
         tailwind.config = {
             theme: {
                 extend: {
@@ -31,7 +53,7 @@
 </head>
 <body class="bg-white text-stone-800 font-sans" x-data="{ sidebarOpen: false, sidebarCollapsed: false }">
     <div class="min-h-screen flex">
-        <aside class="bg-[#b89416] text-white hidden lg:flex lg:flex-col sticky top-0 h-screen shadow-2xl shadow-yellow-900/20 transition-all duration-300" :class="sidebarCollapsed ? 'w-20' : 'w-64'">
+        <aside class="bg-[#b89416] text-white flex flex-col sticky top-0 h-screen shadow-2xl shadow-yellow-900/20 transition-all duration-300 hidden lg:flex" :class="sidebarCollapsed ? 'w-20' : 'w-64'">
             <div class="px-3 py-6 border-b border-yellow-200/20">
                 <button type="button" @click="sidebarCollapsed = !sidebarCollapsed" class="mb-4 ml-auto flex items-center justify-center p-1 text-white hover:text-yellow-100 transition" :title="sidebarCollapsed ? 'Buka sidebar' : 'Ciutkan sidebar'" aria-label="Ciutkan atau buka sidebar">
                     <svg class="w-6 h-6 transition-transform" :class="sidebarCollapsed ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
