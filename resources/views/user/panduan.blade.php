@@ -35,7 +35,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             
-            <div class="bg-stone-100 p-5 rounded-2xl border border-stone-200 space-y-2 relative">
+            <div class="bg-cream-100 p-5 rounded-2xl border border-stone-200 space-y-2 relative">
                 <span class="w-8 h-8 rounded-full bg-pln-900 text-white font-extrabold text-xs flex items-center justify-center font-display">1</span>
                 <h3 class="font-bold text-stone-900 text-sm">Pilih Kriteria</h3>
                 <p class="text-xs text-stone-600 leading-relaxed">
@@ -43,7 +43,7 @@
                 </p>
             </div>
 
-            <div class="bg-stone-100 p-5 rounded-2xl border border-stone-200 space-y-2 relative">
+            <div class="bg-cream-100 p-5 rounded-2xl border border-stone-200 space-y-2 relative">
                 <span class="w-8 h-8 rounded-full bg-pln-900 text-white font-extrabold text-xs flex items-center justify-center font-display">2</span>
                 <h3 class="font-bold text-stone-900 text-sm">Upload PDF</h3>
                 <p class="text-xs text-stone-600 leading-relaxed">
@@ -88,42 +88,42 @@
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             
             <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2">
-                <span class="px-2.5 py-1 rounded bg-stone-200 text-stone-800 text-xs font-extrabold">Level 1</span>
-                <h3 class="font-bold text-stone-900 text-sm">Inisiasi (Initial)</h3>
+                <span class="px-2.5 py-1 rounded bg-stone-200 text-stone-800 text-xs font-extrabold">Level 1 – Pathological</span>
+                <h3 class="font-bold text-stone-900 text-sm">Pathological</h3>
                 <p class="text-xs text-stone-600 leading-relaxed">
-                    Proses K3 bersifat ad-hoc, reaktif terhadap insiden, belum terdokumentasi formal secara menyeluruh.
+                    “K3 dipandang sebagai masalah teknis dan prosedural. Insiden dianggap sebagai bagian dari pekerjaan. Minat rendah terhadap K3.”
                 </p>
             </div>
 
             <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2">
-                <span class="px-2.5 py-1 rounded bg-blue-100 text-blue-900 text-xs font-extrabold">Level 2</span>
-                <h3 class="font-bold text-stone-900 text-sm">Berkembang (Developing)</h3>
+                <span class="px-2.5 py-1 rounded bg-blue-100 text-blue-900 text-xs font-extrabold">Level 2 – Reactive</span>
+                <h3 class="font-bold text-stone-900 text-sm">Reactive</h3>
                 <p class="text-xs text-stone-600 leading-relaxed">
-                    Prosedur dasar K3 mulai disusun, dipatuhi dalam operasional rutin, dan mulai didokumentasikan.
+                    “K3 dapat diselesaikan hanya dengan aturan dan prosedur yang berlaku.”
                 </p>
             </div>
 
             <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2">
-                <span class="px-2.5 py-1 rounded bg-amber-100 text-amber-900 text-xs font-extrabold">Level 3</span>
-                <h3 class="font-bold text-stone-900 text-sm">Terdefinisi (Defined)</h3>
+                <span class="px-2.5 py-1 rounded bg-amber-100 text-amber-900 text-xs font-extrabold">Level 3 – Calculative</span>
+                <h3 class="font-bold text-stone-900 text-sm">Calculative</h3>
                 <p class="text-xs text-stone-600 leading-relaxed">
-                    Standar K3 terintegrasi dalam SOP unit kerja, ada pelatihan berkala, dan pemantauan terstruktur.
+                    “Manajemen sadar bahwa mereka bertanggung jawab atas kecelakaan yang terjadi. Seluruh pegawai memahami tanggung jawab mereka terhadap K3 dan menyadari bahwa seluruh pekerja harus terlibat untuk meningkatkan K3.”
                 </p>
             </div>
 
             <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2">
-                <span class="px-2.5 py-1 rounded bg-emerald-100 text-emerald-900 text-xs font-extrabold">Level 4</span>
-                <h3 class="font-bold text-stone-900 text-sm">Terkelola (Managed)</h3>
+                <span class="px-2.5 py-1 rounded bg-emerald-100 text-emerald-900 text-xs font-extrabold">Level 4 – Proactive</span>
+                <h3 class="font-bold text-stone-900 text-sm">Proactive</h3>
                 <p class="text-xs text-stone-600 leading-relaxed">
-                    Kinerja K3 diukur dengan KPI kuantitatif, analisis risiko prediktif, dan audit internal berkala.
+                    “Pemahaman bahwa K3 sangat penting baik secara etis maupun ekonomis serta dapat meningkatkan produktivitas perusahaan.”
                 </p>
             </div>
 
             <div class="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-2">
-                <span class="px-2.5 py-1 rounded bg-fore-100 text-fore-900 text-xs font-extrabold">Level 5</span>
-                <h3 class="font-bold text-stone-900 text-sm">Optimal (Optimizing)</h3>
+                <span class="px-2.5 py-1 rounded bg-fore-100 text-fore-900 text-xs font-extrabold">Level 5 – Generative</span>
+                <h3 class="font-bold text-stone-900 text-sm">Generative</h3>
                 <p class="text-xs text-stone-600 leading-relaxed">
-                    Budaya K3 berkelanjutan (*generative safety culture*), inovasi keselamatan kerja, dan perbaikan terus-menerus.
+                    “Pemahaman bahwa kecelakaan akan terjadi kapan saja dan seluruh organisasi (bidang) bekerjasama untuk meningkatkan kinerja K3 guna mencegah kecelakaan dan meningkatkan profit dan produktivitas perusahaan.”
                 </p>
             </div>
 
@@ -144,10 +144,6 @@
                 <li class="flex items-start gap-2.5">
                     <span class="w-5 h-5 rounded-full bg-fore-100 text-fore-900 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">✓</span>
                     <span><strong>Ukuran Maksimal:</strong> Ukuran file maksimal adalah <strong>10 Megabytes (MB)</strong> per slot level.</span>
-                </li>
-                <li class="flex items-start gap-2.5">
-                    <span class="w-5 h-5 rounded-full bg-fore-100 text-fore-900 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">✓</span>
-                    <span><strong>Kelengkapan Bukti:</strong> Pastikan dokumen memuat tanggal, tanda tangan pengesahan, atau stempel unit yang sah.</span>
                 </li>
                 <li class="flex items-start gap-2.5">
                     <span class="w-5 h-5 rounded-full bg-fore-100 text-fore-900 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">✓</span>
