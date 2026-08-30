@@ -174,6 +174,36 @@ class RoleAccessTest extends TestCase
         ]);
     }
 
+    public function test_permission_approval_allows_requester_to_delete_file(): void
+    {
+        Storage::fake('public');
+        [$owner, $other, $upload] = $this->createDocumentFixture();
+        $upload->update(['status' => 'pending']);
+
+        $this->actingAs($other)
+            ->post(route('documents.permission.request', $upload), ['action' => 'edit'])
+            ->assertSessionHas('success');
+
+        $permission = DocumentPermissionRequest::firstOrFail();
+
+        $this->actingAs($owner)
+            ->post(route('documents.permission.respond', $permission), ['status' => 'approved'])
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('document_permission_requests', [
+            'id' => $permission->id,
+            'status' => 'approved',
+            'requester_id' => $other->id,
+            'owner_id' => $owner->id,
+        ]);
+
+        $this->actingAs($other)
+            ->delete(route('documents.delete', $upload))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseMissing('evidence_uploads', ['id' => $upload->id]);
+    }
+
     public function test_user_must_upload_previous_level_first(): void
     {
         Storage::fake('public');
@@ -201,6 +231,49 @@ class RoleAccessTest extends TestCase
             'maturity_level_id' => $levelTwo->id,
             'original_filename' => 'level-2.pdf',
         ]);
+    }
+
+    public function test_upload_redirect_keeps_selected_level_after_refresh(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create(['role' => 'user']);
+        $criteria = Kriteria::create(['code' => 'K1', 'title' => 'Kriteria']);
+        $subcriteria = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K1.1', 'title' => 'Sub Kriteria']);
+
+        $levelOne = MaturityLevel::create(['sub_criteria_id' => $subcriteria->id, 'level' => 1, 'evidence_mode' => 'REQUIRED']);
+        $levelTwo = MaturityLevel::create(['sub_criteria_id' => $subcriteria->id, 'level' => 2, 'evidence_mode' => 'REQUIRED']);
+
+        $requirementOne = EvidenceRequirement::create(['maturity_level_id' => $levelOne->id, 'name' => 'Bukti Level 1', 'allowed_file_type' => 'pdf', 'max_file_size' => 10240]);
+        $slotOne = EvidenceSlot::create(['evidence_requirement_id' => $requirementOne->id, 'name' => 'Slot Level 1', 'is_required' => true]);
+
+        $this->actingAs($user)
+            ->post(route('evidence.slot.upload', $slotOne), ['document' => UploadedFile::fake()->create('level-1.pdf', 10, 'application/pdf')])
+            ->assertSessionHas('success');
+
+        $requirementTwo = EvidenceRequirement::create(['maturity_level_id' => $levelTwo->id, 'name' => 'Bukti Level 2', 'allowed_file_type' => 'pdf', 'max_file_size' => 10240]);
+        $slotTwo = EvidenceSlot::create(['evidence_requirement_id' => $requirementTwo->id, 'name' => 'Slot Level 2', 'is_required' => true]);
+
+        $this->actingAs($user)
+            ->post(route('evidence.slot.upload', $slotTwo), ['document' => UploadedFile::fake()->create('level-2.pdf', 10, 'application/pdf')])
+            ->assertSessionHas('success')
+            ->assertRedirect(route('user.kriteria', ['criteria_id' => $criteria->id, 'level' => $levelTwo->id, 'requirement' => $requirementTwo->id]));
+    }
+
+    public function test_criteria_score_is_average_of_subcriteria_scores(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $criteria = Kriteria::create(['code' => 'K1', 'title' => 'Kriteria']);
+
+        foreach (['K1.1', 'K1.2', 'K1.3'] as $code) {
+            $sub = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => $code, 'title' => 'Sub ' . $code]);
+            $level = MaturityLevel::create(['sub_criteria_id' => $sub->id, 'level' => 1, 'evidence_mode' => 'REQUIRED']);
+            $requirement = EvidenceRequirement::create(['maturity_level_id' => $level->id, 'name' => 'Bukti', 'allowed_file_type' => 'pdf', 'max_file_size' => 10240]);
+            $slot = EvidenceSlot::create(['evidence_requirement_id' => $requirement->id, 'name' => 'Slot', 'is_required' => true]);
+            EvidenceUpload::create(['maturity_level_id' => $level->id, 'evidence_requirement_id' => $requirement->id, 'evidence_slot_id' => $slot->id, 'user_id' => $user->id, 'file_path' => 'proof.pdf', 'original_filename' => 'proof.pdf', 'status' => 'approved', 'uploaded_at' => now()]);
+        }
+
+        $this->assertSame(1, $criteria->fresh()->subKriterias->first()->scoreForUser($user->id));
+        $this->assertSame(1.0, $criteria->fresh()->scoreForUser($user->id));
     }
 
     public function test_scores_use_highest_completed_level_and_criteria_average(): void

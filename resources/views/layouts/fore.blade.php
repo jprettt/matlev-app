@@ -65,7 +65,7 @@
 <body class="min-h-screen flex flex-col antialiased selection:bg-pln-500 selection:text-white" x-data="{ mobileMenuOpen: false, accountOpen: false, notificationOpen: false, logoutOpen: false }" @keydown.escape.window="accountOpen = false; notificationOpen = false; logoutOpen = false">
 
     <!-- 1. TOP NAVBAR (Blue PLN Theme) -->
-    <header class="sticky top-0 z-50 shadow-lg bg-pln-900 bg-cover bg-center" style="background-image: linear-gradient(rgba(16, 50, 132, 0.86), rgba(16, 50, 132, 0.86)), url('{{ asset('images/bg topbar.png') }}');">
+    <header class="sticky top-0 z-50 border-b-4 border-accent-400 bg-pln-900 bg-cover bg-center" style="background-image: linear-gradient(rgba(16, 50, 132, 0.86), rgba(16, 50, 132, 0.86)), url('{{ asset('images/bg topbar.png') }}');">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">

@@ -199,7 +199,12 @@ class MatlevController extends Controller
     public function riwayat()
     {
         $data = $this->getStatsAndData();
-        $data['activityLogs'] = ActivityLog::with(['actor', 'targetUser', 'maturityLevel.subkriteria'])
+        $data['activityLogs'] = ActivityLog::with([
+                'actor',
+                'targetUser',
+                'maturityLevel.subkriteria.kriteria',
+                'evidenceUpload.evidenceRequirement',
+            ])
             ->whereIn('activity_type', [
                 'upload',
                 'delete',
@@ -484,7 +489,11 @@ class MatlevController extends Controller
             'occurred_at' => $upload->uploaded_at ?? now(),
         ]);
 
-        return redirect()->route('user.kriteria', ['criteria_id' => $criteriaId])
+        return redirect()->route('user.kriteria', [
+                'criteria_id' => $criteriaId,
+                'level' => $level->id,
+                'requirement' => $requirement->id,
+            ])
             ->with('success', 'Evidence berhasil dikirim dan sedang menunggu penilaian.');
     }
 

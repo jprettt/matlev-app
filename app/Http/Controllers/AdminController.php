@@ -119,13 +119,19 @@ class AdminController extends Controller
         ]);
 
         if ($request->status !== 'pending') {
+            $requirementId = $upload->evidence_requirement_id ?? $upload->evidenceRequirement?->id;
+            $criteriaId = $upload->maturityLevel?->subkriteria?->kriteria?->id ?? null;
+            $targetUrl = $requirementId
+                ? route('user.kriteria', ['level' => $upload->maturity_level_id, 'requirement' => $requirementId, 'criteria_id' => $criteriaId]) . '#requirement-' . $requirementId
+                : route('user.kriteria', ['level' => $upload->maturity_level_id, 'criteria_id' => $criteriaId]) . '#level-' . $upload->maturity_level_id;
+
             AppNotification::create([
                 'recipient_id' => $upload->user_id,
                 'type' => 'evaluation',
                 'title' => 'Berkas telah dinilai',
                 'message' => 'Verifikator telah menilai ' . $upload->original_filename . '. Status: ' . ($request->status === 'approved' ? 'Disetujui' : 'Perlu Revisi') . '.',
                 'document_id' => $upload->id,
-                'target_url' => route('user.kriteria', ['level' => $upload->maturity_level_id]) . '#level-' . $upload->maturity_level_id,
+                'target_url' => $targetUrl,
             ]);
         }
 

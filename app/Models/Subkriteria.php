@@ -25,7 +25,15 @@ class Subkriteria extends Model
 
     public function scoreForUser(?int $userId = null): int
     {
-        return (int) $this->maturityLevels
-            ->max(fn ($level) => $level->scoreForUser($userId));
+        $scores = $this->maturityLevels
+            ->map(fn ($level) => (float) $level->scoreForUser($userId))
+            ->filter(fn ($score) => $score !== null)
+            ->values();
+
+        if ($scores->isEmpty()) {
+            return 0;
+        }
+
+        return (int) $scores->max();
     }
 }

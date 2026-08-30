@@ -83,7 +83,7 @@
                     <tr>
                         <th class="p-4 sm:px-6">Waktu</th>
                         <th class="p-4 sm:px-6">Aktor</th>
-                        <th class="p-4 sm:px-6">Sub Kriteria</th>
+                        <th class="p-4 sm:px-6">Letak File</th>
                         <th class="p-4 sm:px-6">Level</th>
                         <th class="p-4 sm:px-6">Keterangan</th>
                     </tr>
@@ -111,7 +111,12 @@
                             $actorForFilter = (int) $log->actor_id === (int) Auth::id()
                                 ? 'mine'
                                 : (($log->actor->role ?? null) === 'user' ? 'team' : 'admin');
-                            $detailUrl = route('user.kriteria', ['level' => $log->maturity_level_id]) . '#level-' . $log->maturity_level_id;
+                            $requirementId = $log->evidenceUpload?->evidence_requirement_id ?? $log->evidenceUpload?->evidenceRequirement?->id ?? null;
+                            $criteriaId = $log->maturityLevel->subkriteria?->kriteria?->id ?? null;
+                            $detailUrl = $requirementId
+                                ? route('user.kriteria', ['level' => $log->maturity_level_id, 'requirement' => $requirementId, 'criteria_id' => $criteriaId]) . '#requirement-' . $requirementId
+                                : route('user.kriteria', ['level' => $log->maturity_level_id, 'criteria_id' => $criteriaId]) . '#level-' . $log->maturity_level_id;
+                            $locationText = trim((($log->maturityLevel->subkriteria?->kriteria?->code ?? 'Kriteria') . ' - ' . ($log->maturityLevel->subkriteria?->code ?? 'SK')));
                         @endphp
                         <tr @click="window.location.href = '{{ $detailUrl }}'"
                             x-show="(activityFilter === 'all' || activityFilter === '{{ $typeForFilter }}') && (actorFilter === 'all' || actorFilter === '{{ $actorForFilter }}' || (actorFilter === 'team' && '{{ $actorForFilter }}' === 'mine'))"
@@ -127,7 +132,7 @@
                                     {{ $actor }}
                                 </span>
                             </td>
-                            <td class="p-4 sm:px-6 text-stone-800">{{ $log->maturityLevel->subkriteria->title ?? '-' }}</td>
+                            <td class="p-4 sm:px-6 text-stone-800">{{ $locationText ?: '-' }}</td>
                             <td class="p-4 sm:px-6 whitespace-nowrap">
                                 <span class="px-2.5 py-1 bg-stone-100 text-pln-900 font-extrabold text-xs rounded-full border border-stone-200">Lvl {{ $log->maturityLevel->level ?? '-' }}</span>
                             </td>

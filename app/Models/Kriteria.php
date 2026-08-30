@@ -20,10 +20,15 @@ class Kriteria extends Model
 
     public function scoreForUser(?int $userId = null): float
     {
-        if ($this->subKriterias->isEmpty()) {
-            return 0;
+        $scores = $this->subKriterias
+            ->map(fn ($sub) => (float) $sub->scoreForUser($userId))
+            ->filter(fn ($score) => $score !== null)
+            ->values();
+
+        if ($scores->isEmpty()) {
+            return 0.0;
         }
 
-        return round($this->subKriterias->avg(fn ($sub) => $sub->scoreForUser($userId)), 2);
+        return round($scores->avg(), 2);
     }
 }

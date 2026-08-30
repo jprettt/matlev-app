@@ -44,6 +44,12 @@ class DocumentPermissionController extends Controller
             'occurred_at' => now(),
         ]);
 
+        $requirementId = $upload->evidence_requirement_id ?? $upload->evidenceRequirement?->id;
+        $criteriaId = $upload->maturityLevel?->subkriteria?->kriteria?->id ?? null;
+        $targetUrl = $requirementId
+            ? route('user.kriteria', ['level' => $upload->maturity_level_id, 'requirement' => $requirementId, 'criteria_id' => $criteriaId]) . '#requirement-' . $requirementId
+            : route('user.kriteria', ['level' => $upload->maturity_level_id, 'criteria_id' => $criteriaId]) . '#level-' . $upload->maturity_level_id;
+
         AppNotification::create([
             'recipient_id' => $upload->user_id,
             'type' => 'permission_request',
@@ -51,7 +57,7 @@ class DocumentPermissionController extends Controller
             'message' => Auth::user()->name . ' meminta izin mengganti ' . $upload->original_filename . ($permissionRequest->reason ? ': ' . $permissionRequest->reason : '.'),
             'document_id' => $upload->id,
             'request_id' => $permissionRequest->id,
-            'target_url' => route('user.kriteria', ['level' => $upload->maturity_level_id]) . '#level-' . $upload->maturity_level_id,
+            'target_url' => $targetUrl,
         ]);
 
         return back()->with('success', 'Permintaan izin telah dikirim kepada pemilik dokumen.');
@@ -83,6 +89,12 @@ class DocumentPermissionController extends Controller
             'occurred_at' => $permissionRequest->responded_at,
         ]);
 
+        $requirementId = $permissionRequest->evidenceUpload->evidence_requirement_id ?? $permissionRequest->evidenceUpload->evidenceRequirement?->id;
+        $criteriaId = $permissionRequest->evidenceUpload->maturityLevel?->subkriteria?->kriteria?->id ?? null;
+        $targetUrl = $requirementId
+            ? route('user.kriteria', ['level' => $permissionRequest->evidenceUpload->maturity_level_id, 'requirement' => $requirementId, 'criteria_id' => $criteriaId]) . '#requirement-' . $requirementId
+            : route('user.kriteria', ['level' => $permissionRequest->evidenceUpload->maturity_level_id, 'criteria_id' => $criteriaId]) . '#level-' . $permissionRequest->evidenceUpload->maturity_level_id;
+
         AppNotification::create([
             'recipient_id' => $permissionRequest->requester_id,
             'type' => 'permission_' . $validated['status'],
@@ -90,7 +102,7 @@ class DocumentPermissionController extends Controller
             'message' => Auth::user()->name . ' telah ' . ($validated['status'] === 'approved' ? 'menyetujui' : 'menolak') . ' permintaan Anda untuk mengganti ' . $permissionRequest->evidenceUpload->original_filename . '.',
             'document_id' => $permissionRequest->evidence_upload_id,
             'request_id' => $permissionRequest->id,
-            'target_url' => route('user.kriteria', ['level' => $permissionRequest->evidenceUpload->maturity_level_id]) . '#level-' . $permissionRequest->evidenceUpload->maturity_level_id,
+            'target_url' => $targetUrl,
         ]);
 
         return back()->with('success', 'Permintaan izin telah ' . ($validated['status'] === 'approved' ? 'disetujui.' : 'ditolak.'));
