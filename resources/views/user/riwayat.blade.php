@@ -81,11 +81,11 @@
                 <table class="w-full text-left text-xs sm:text-sm text-stone-700">
                 <thead class="bg-stone-100/90 text-stone-600 uppercase text-[11px] font-bold tracking-wider border-b border-stone-200 text-center">
                     <tr>
-                        <th class="p-4 sm:px-6">Waktu</th>
-                        <th class="p-4 sm:px-6">Aktor</th>
-                        <th class="p-4 sm:px-6">Letak File</th>
-                        <th class="p-4 sm:px-6">Level</th>
-                        <th class="p-4 sm:px-6">Keterangan</th>
+                        <th class="p-4 sm:px-6 text-center">Waktu</th>
+                        <th class="p-4 sm:px-6 text-center min-w-[180px]">Letak File</th>
+                        <th class="p-4 sm:px-6 text-center w-24">Level</th>
+                        <th class="p-4 sm:px-6 text-center min-w-[220px]">Jenis Bukti</th>
+                        <th class="p-4 sm:px-6 text-center min-w-[160px]">Keterangan</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-stone-100">
@@ -123,20 +123,18 @@
                             class="cursor-pointer hover:bg-blue-50/60 transition-colors focus-within:bg-blue-50/60"
                             tabindex="0"
                             @keydown.enter="window.location.href = '{{ $detailUrl }}'">
-                            <td class="p-4 sm:px-6 whitespace-nowrap">
+                            <td class="p-4 sm:px-6 whitespace-nowrap text-center">
                                 <span class="font-bold text-stone-800 block">{{ $log->occurred_at?->timezone(config('app.timezone'))->format('d M Y') ?? '-' }}</span>
                                 <span class="text-[11px] text-stone-500">{{ $log->occurred_at?->timezone(config('app.timezone'))->format('H:i') ?? '-' }} WITA</span>
                             </td>
-                            <td class="p-4 sm:px-6 text-center whitespace-nowrap">
-                                <span class="font-bold {{ $actorRole === 'user' ? 'text-pln-700' : 'text-rose-700' }}">
-                                    {{ $actor }}
-                                </span>
-                            </td>
-                            <td class="p-4 sm:px-6 text-stone-800">{{ $locationText ?: '-' }}</td>
-                            <td class="p-4 sm:px-6 whitespace-nowrap">
+                            <td class="p-4 sm:px-6 text-stone-800 text-center min-w-[180px] whitespace-nowrap">{{ $locationText ?: '-' }}</td>
+                            <td class="p-4 sm:px-6 w-24 text-center whitespace-nowrap">
                                 <span class="px-2.5 py-1 bg-stone-100 text-pln-900 font-extrabold text-xs rounded-full border border-stone-200">Lvl {{ $log->maturityLevel->level ?? '-' }}</span>
                             </td>
-                            <td class="p-4 sm:px-6 text-stone-700 min-w-[280px]">
+                            <td class="p-4 sm:px-6 text-stone-800 align-top min-w-[220px] text-left">
+                                {{ $log->evidenceUpload?->evidenceRequirement?->name ?? '-' }}
+                            </td>
+                            <td class="p-4 sm:px-6 text-stone-700 min-w-[160px] text-left">
                                 {{ $descriptionBeforeFile }}
                                 <span class="font-bold text-emerald-700">{{ $filename }}</span>
                                 {{ $descriptionAfterFile }}
@@ -144,7 +142,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="p-12 text-center text-stone-500">Belum ada aktivitas yang tercatat.</td>
+                            <td colspan="6" class="p-12 text-center text-stone-500">Belum ada aktivitas yang tercatat.</td>
                         </tr>
                     @endforelse
                 </tbody>

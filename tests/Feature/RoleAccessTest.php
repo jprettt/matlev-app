@@ -50,6 +50,52 @@ class RoleAccessTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'atasan@matlev.test', 'role' => 'atasan']);
     }
 
+    public function test_dashboard_percentage_counts_achieved_levels_even_without_evidence(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $criteria = Kriteria::create(['code' => 'K1', 'title' => 'Kriteria']);
+        $subcriteria = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K1.1', 'title' => 'Sub Kriteria']);
+
+        MaturityLevel::create([
+            'sub_criteria_id' => $subcriteria->id,
+            'level' => 1,
+            'level_number' => 1,
+            'evidence_mode' => 'NONE',
+            'evidence_requirement' => 'Tidak perlu bukti',
+        ]);
+
+        MaturityLevel::create([
+            'sub_criteria_id' => $subcriteria->id,
+            'level' => 2,
+            'level_number' => 2,
+            'evidence_mode' => 'REQUIRED',
+            'evidence_requirement' => 'PDF',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('user.dashboard'))
+            ->assertOk()
+            ->assertSee('50%');
+    }
+
+    public function test_dashboard_status_counts_approved_files_not_levels(): void
+    {
+        $user = User::factory()->create(['role' => 'user']);
+        $criteria = Kriteria::create(['code' => 'K1', 'title' => 'Kriteria']);
+        $subcriteria = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K1.1', 'title' => 'Sub Kriteria']);
+        $level = MaturityLevel::create(['sub_criteria_id' => $subcriteria->id, 'level' => 1, 'evidence_requirement' => 'PDF']);
+        $requirement = EvidenceRequirement::create(['maturity_level_id' => $level->id, 'name' => 'Bukti', 'allowed_file_type' => 'pdf', 'max_file_size' => 10240]);
+        $slot = EvidenceSlot::create(['evidence_requirement_id' => $requirement->id, 'name' => 'Slot', 'is_required' => true]);
+
+        EvidenceUpload::create(['maturity_level_id' => $level->id, 'evidence_requirement_id' => $requirement->id, 'evidence_slot_id' => $slot->id, 'user_id' => $user->id, 'file_path' => 'a.pdf', 'original_filename' => 'a.pdf', 'status' => 'approved', 'uploaded_at' => now()]);
+        EvidenceUpload::create(['maturity_level_id' => $level->id, 'evidence_requirement_id' => $requirement->id, 'evidence_slot_id' => $slot->id, 'user_id' => $user->id, 'file_path' => 'b.pdf', 'original_filename' => 'b.pdf', 'status' => 'approved', 'uploaded_at' => now()]);
+
+        $this->actingAs($user)
+            ->get(route('user.dashboard'))
+            ->assertOk()
+            ->assertViewHas('stats', fn ($stats) => $stats['totalApproved'] === 2 && $stats['totalSlots'] === 1);
+    }
+
     public function test_verifier_evaluation_is_added_to_activity_log(): void
     {
         [$owner, $other, $upload] = $this->createDocumentFixture();

@@ -219,7 +219,7 @@
                         </h2>
                         
                         <p class="text-gray-500 text-base leading-relaxed">
-                            Total <strong class="text-gray-700">{{ $stats['totalApproved'] }}</strong> dari <strong class="text-gray-700">{{ $stats['totalSlots'] }}</strong> slot level indikator telah dinyatakan lengkap dan valid.
+                            Total <strong class="text-gray-700">{{ $stats['totalCompletedLevels'] }}</strong> dari <strong class="text-gray-700">{{ $stats['totalSlots'] }}</strong> level indikator sudah tercapai, termasuk level yang tidak memerlukan bukti dokumen.
                         </p>
 
                         <!-- Progress Bar -->
@@ -246,7 +246,7 @@
                             </div>
                             <div>
                                 <p class="font-extrabold text-gray-900 text-lg">Tingkat Kepatuhan K3</p>
-                                <p class="text-xs text-gray-500 mt-1">Berdasarkan eviden terverifikasi evaluator</p>
+                                <p class="text-xs text-gray-500 mt-1">Berdasarkan semua level yang sudah tercapai</p>
                             </div>
                             <div class="flex items-center justify-center gap-2 text-xs text-gray-400">
                                 <span class="w-3 h-3 rounded-full bg-accent-400"></span>

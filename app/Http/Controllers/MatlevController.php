@@ -47,6 +47,7 @@ class MatlevController extends Controller
             ->get();
 
         $totalSlots = 0;
+        $completedLevels = 0;
         $totalApproved = 0;
         $totalPending = 0;
         $totalRejected = 0;
@@ -57,16 +58,24 @@ class MatlevController extends Controller
             foreach ($crit->subKriterias as $sub) {
                 foreach ($sub->maturityLevels as $lvl) {
                     $totalSlots++;
+                    if ($lvl->statusForUser(Auth::id()) === 'COMPLETED') {
+                        $completedLevels++;
+                    }
+
                     $uploads = $lvl->evidenceUploads;
-                    if ($uploads->isNotEmpty()) {
-                        $levelApproved = $uploads->every(fn ($upload) => $upload->status === 'approved');
-                        if ($levelApproved) {
+                    foreach ($uploads as $upload) {
+                        $status = $upload->status ?? 'pending';
+
+                        if ($status === 'approved') {
                             $totalApproved++;
-                        } elseif ($uploads->contains('status', 'pending')) {
+                        } elseif ($status === 'pending') {
                             $totalPending++;
-                        } elseif ($uploads->contains('status', 'rejected')) {
+                        } elseif ($status === 'rejected') {
                             $totalRejected++;
                         }
+                    }
+
+                    if ($uploads->isNotEmpty()) {
 
                         foreach ($uploads as $upload) {
                             $st = $upload->status ?? 'pending';
@@ -152,10 +161,11 @@ class MatlevController extends Controller
             'rejected' => count(array_filter($myHistories, fn ($item) => ($item['status'] ?? '') === 'rejected')),
         ];
 
-        $globalPercent = $totalSlots > 0 ? round(($totalApproved / $totalSlots) * 100) : 0;
+        $globalPercent = $totalSlots > 0 ? round(($completedLevels / $totalSlots) * 100) : 0;
 
         $stats = [
             'totalSlots' => $totalSlots,
+            'totalCompletedLevels' => $completedLevels,
             'totalApproved' => $totalApproved,
             'totalPending' => $totalPending,
             'totalRejected' => $totalRejected,
