@@ -219,8 +219,7 @@
                         </h2>
                         
                         <p class="text-gray-500 text-base leading-relaxed">
-                            Total <strong class="text-gray-700">{{ $stats['totalCompletedLevels'] }}</strong> dari <strong class="text-gray-700">{{ $stats['totalSlots'] }}</strong> level indikator sudah tercapai, termasuk level yang tidak memerlukan bukti dokumen.
-                        </p>
+                            Total <strong class="text-gray-700">{{ $stats['totalCompletedLevels'] }}</strong> dari <strong class="text-gray-700">{{ $stats['totalSlots'] }}</strong> level indikator sudah tercapai.
 
                         <!-- Progress Bar -->
                         <div class="space-y-3 pt-2 max-w-xl">
