@@ -231,23 +231,65 @@
                                                                 </div>
                                                             </div>
 
-                                                            <div class="space-y-2">
-                                                                <form action="{{ route('admin.verify', $upload->id) }}" method="POST">
-                                                                    @csrf
-                                                                    <input type="hidden" name="status" value="approved">
-                                                                    <button type="submit" class="w-full rounded-xl bg-[#1b8f5a] px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#147a4d]">
-                                                                        Setujui
-                                                                    </button>
-                                                                </form>
+                                                            <div x-data="{
+                                                                approveOpen: false,
+                                                                rejectOpen: false,
+                                                                rejectionReason: ''
+                                                            }" class="space-y-2">
+                                                                <button type="button" @click="approveOpen = true" class="w-full rounded-xl bg-[#1b8f5a] px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#147a4d]">
+                                                                    Setujui
+                                                                </button>
 
-                                                                <form action="{{ route('admin.verify', $upload->id) }}" method="POST" class="space-y-2">
-                                                                    @csrf
-                                                                    <input type="hidden" name="status" value="rejected">
-                                                                    <textarea name="rejection_note" rows="2" required placeholder="Tulis alasan penolakan..." class="w-full rounded-xl border border-rose-200 bg-rose-50/40 px-3 py-2 text-sm text-stone-700 placeholder:text-rose-300 focus:border-rose-300 focus:ring-2 focus:ring-rose-100"></textarea>
-                                                                    <button type="submit" class="w-full rounded-xl bg-[#d93025] px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#bc2a20]">
-                                                                        Tolak & Simpan Catatan
-                                                                    </button>
-                                                                </form>
+                                                                <button type="button" @click="rejectOpen = true" class="w-full rounded-xl bg-[#d93025] px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#bc2a20]">
+                                                                    Tolak & Simpan Catatan
+                                                                </button>
+
+                                                                <div x-show="approveOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" style="display: none;">
+                                                                    <div @click.self="approveOpen = false" class="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl">
+                                                                        <div class="flex items-center justify-between gap-4">
+                                                                            <div>
+                                                                                <p class="text-[10px] font-extrabold uppercase tracking-[.22em] text-stone-500">Konfirmasi</p>
+                                                                                <h3 class="mt-2 text-xl font-extrabold text-stone-900">Yakin setujui dokumen ini?</h3>
+                                                                            </div>
+                                                                        </div>
+                                                                        <p class="mt-4 text-sm leading-6 text-stone-600">Tindakan ini akan menyetujui berkas yang sedang dinilai. Pastikan Anda sudah mengecek kelengkapan dokumen sebelum melanjutkan.</p>
+                                                                        <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                                                            <button type="button" @click="approveOpen = false" class="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-700 transition hover:bg-stone-50">
+                                                                                Batal
+                                                                            </button>
+                                                                            <form action="{{ route('admin.verify', $upload->id) }}" method="POST">
+                                                                                @csrf
+                                                                                <input type="hidden" name="status" value="approved">
+                                                                                <button type="submit" class="w-full rounded-xl bg-[#1b8f5a] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#147a4d]">
+                                                                                    Ya, Setujui
+                                                                                </button>
+                                                                            </form>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div x-show="rejectOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" style="display: none;">
+                                                                    <div @click.self="rejectOpen = false" class="w-full max-w-xl rounded-2xl border border-stone-200 bg-white p-5 shadow-2xl">
+                                                                        <div class="mb-4">
+                                                                            <p class="text-[10px] font-extrabold uppercase tracking-[.22em] text-stone-500">Alasan penolakan</p>
+                                                                            <h3 class="mt-2 text-xl font-extrabold text-stone-900">Tolak dokumen</h3>
+                                                                        </div>
+
+                                                                        <form action="{{ route('admin.verify', $upload->id) }}" method="POST" class="space-y-3">
+                                                                            @csrf
+                                                                            <input type="hidden" name="status" value="rejected">
+                                                                            <textarea x-model="rejectionReason" name="rejection_note" rows="4" required placeholder="Tulis alasan verifikator menolak dokumen..." class="w-full rounded-xl border border-rose-200 bg-rose-50/50 px-3 py-2.5 text-sm text-stone-700 placeholder:text-rose-300 focus:border-rose-300 focus:ring-2 focus:ring-rose-100"></textarea>
+                                                                            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                                                                <button type="button" @click="rejectOpen = false" class="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-700 transition hover:bg-stone-50">
+                                                                                    Batal
+                                                                                </button>
+                                                                                <button type="submit" class="rounded-xl bg-[#d93025] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#bc2a20]">
+                                                                                    Tolak & Simpan Catatan
+                                                                                </button>
+                                                                            </div>
+                                                                        </form>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
