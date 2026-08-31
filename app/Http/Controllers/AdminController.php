@@ -58,25 +58,23 @@ class AdminController extends Controller
             'occurred_at' => now(),
         ]);
 
-        $criteriaQuery = Kriteria::with([
+        $criterias = Kriteria::with([
             'subKriterias.maturityLevels.evidenceUploads.user',
             'subKriterias.maturityLevels.evidenceUploads.evidenceRequirement',
             'subKriterias.maturityLevels.evidenceRequirements.slots',
             'subKriterias.maturityLevels.evidenceRequirements',
-        ])->orderBy('code');
+        ])->orderBy('code')->get();
 
-        if ($request->filled('criteria_id')) {
-            $criteriaQuery->where('id', $request->criteria_id);
-        }
-
-        $criterias = $criteriaQuery->get();
         $selectedCriteria = $criterias->firstWhere('id', $request->query('criteria_id')) ?? $criterias->first();
         $selectedSub = $selectedCriteria?->subKriterias->firstWhere('id', $request->query('sub_criteria_id')) ?? $selectedCriteria?->subKriterias->first();
         $selectedLevel = $selectedSub?->maturityLevels->firstWhere('id', $request->query('level_id')) ?? $selectedSub?->maturityLevels->first();
 
         foreach ($criterias as $criteria) {
             foreach ($criteria->subKriterias as $sub) {
-                $levels = $sub->maturityLevels()->orderBy('level')->get();
+                $levels = $sub->maturityLevels
+                    ->sortBy('level')
+                    ->values();
+
                 foreach ($levels as $level) {
                     $pendingUploads = $level->evidenceUploads
                         ->where('status', 'pending')
@@ -90,9 +88,9 @@ class AdminController extends Controller
                         return ! $this->isLevelReadyForReview($previousLevel);
                     });
 
-                    $level->review_status = $pendingUploads->isNotEmpty()
-                        ? ($isBlocked ? 'yellow' : 'red')
-                        : 'neutral';
+                    $level->review_status = $isBlocked
+                        ? 'yellow'
+                        : ($pendingUploads->isNotEmpty() ? 'red' : 'neutral');
                     $level->review_pending_count = $pendingUploads->count();
                     $level->review_blocked = $isBlocked;
                 }
@@ -129,10 +127,15 @@ class AdminController extends Controller
             return true;
         }
 
-        $previousPending = $level->evidenceUploads()->where('status', 'pending')->exists();
-        $hasReviewed = $level->evidenceUploads()->whereIn('status', ['approved', 'rejected'])->exists();
+        if ($level->evidenceUploads()->where('status', 'rejected')->exists()) {
+            return false;
+        }
 
-        return ! $previousPending && $hasReviewed;
+        if ($level->evidenceUploads()->where('status', 'pending')->exists()) {
+            return false;
+        }
+
+        return $level->evidenceUploads()->where('status', 'approved')->exists();
     }
 
     private function ensureReviewOrder(EvidenceUpload $upload): void

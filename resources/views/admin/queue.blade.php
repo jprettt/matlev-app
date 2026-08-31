@@ -92,7 +92,7 @@
                     $firstLevelInCriteria = $firstSubInCriteria?->maturityLevels->first();
                 @endphp
 
-                <section x-show="activeCriteria === '{{ $criteria->id }}'" class="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm" x-data="{ activeSub: '{{ $firstSubInCriteria?->id ?? '' }}', activeLevel: '{{ $firstLevelInCriteria?->id ?? '' }}' }">
+                <section x-show="activeCriteria === '{{ $criteria->id }}'" class="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
                     <div class="border-b border-stone-200 px-5 py-5 sm:px-7">
                         <div class="flex flex-wrap items-start justify-between gap-3">
                             <div>
@@ -125,7 +125,7 @@
                     <div class="p-4 sm:p-6">
                         @foreach($criteria->subKriterias as $sub)
                             @php
-                                $levels = $sub->maturityLevels()->orderBy('level')->get();
+                                $levels = $sub->maturityLevels->sortBy('level')->values();
                             @endphp
 
                             <article x-show="activeSub === '{{ $sub->id }}'" class="rounded-xl border border-stone-200 bg-white">
@@ -192,10 +192,14 @@
                                                 @endif
                                             </div>
 
-                                           @if($level->evidenceUploads->isEmpty())
-                                                <div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                                                    @forelse($level->evidenceRequirements as $requirement)
-                                                        <div class="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+                                           @if($state === 'yellow')
+                                                <div class="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900 shadow-sm">
+                                                    <div class="flex items-start gap-3">
+                                                        <span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-amber-200 text-base font-bold text-amber-900">!</span>
+                                                        <span>Level terkunci: dokumen pada level sebelumnya masih perlu revisi atau belum selesai dinilai.</span>
+                                                    </div>
+                                                </div>
+                                           @elseif($level->evidenceUploads->isEmpty())                                                <div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">                                                    @forelse($level->evidenceRequirements as $requirement)                                                        <div class="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
                                                             <div class="flex items-center justify-between gap-3">
                                                                 <span class="text-[10px] font-extrabold uppercase tracking-[.18em] text-stone-500">
                                                                     Bukti {{ $loop->iteration }} @if($requirement->is_required) · Wajib @endif

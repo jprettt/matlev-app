@@ -155,6 +155,21 @@ class RoleAccessTest extends TestCase
             ]));
     }
 
+    public function test_admin_queue_keeps_all_criteria_tabs_visible_when_a_specific_criteria_is_selected(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $criteriaOne = Kriteria::create(['code' => 'K-01', 'title' => 'Kriteria Satu']);
+        $criteriaTwo = Kriteria::create(['code' => 'K-02', 'title' => 'Kriteria Dua']);
+        Subkriteria::create(['criteria_id' => $criteriaOne->id, 'code' => '1.1', 'title' => 'Sub 1']);
+        Subkriteria::create(['criteria_id' => $criteriaTwo->id, 'code' => '2.1', 'title' => 'Sub 2']);
+
+        $this->actingAs($admin)
+            ->get(route('admin.queue', ['criteria_id' => $criteriaOne->id]))
+            ->assertOk()
+            ->assertSee('K-01')
+            ->assertSee('K-02');
+    }
+
     public function test_verifier_can_review_next_level_when_previous_level_is_auto_fulfilled_without_upload(): void
     {
         $verifier = User::factory()->create(['role' => 'admin']);
@@ -175,6 +190,66 @@ class RoleAccessTest extends TestCase
         $this->actingAs($verifier)
             ->post(route('admin.verify', $upload), ['status' => 'approved'])
             ->assertSessionHas('success');
+    }
+
+    public function test_verifier_cannot_review_next_level_when_previous_level_was_rejected(): void
+    {
+        $verifier = User::factory()->create(['role' => 'admin']);
+        $owner = User::factory()->create(['role' => 'user']);
+        $criteria = Kriteria::create(['code' => 'K4', 'title' => 'Kriteria rejected']);
+        $subCriteria = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K4.1', 'title' => 'Sub Kriteria rejected']);
+        $levelOne = MaturityLevel::create(['sub_criteria_id' => $subCriteria->id, 'level' => 1, 'evidence_requirement' => 'PDF']);
+        $levelTwo = MaturityLevel::create(['sub_criteria_id' => $subCriteria->id, 'level' => 2, 'evidence_requirement' => 'PDF']);
+        EvidenceUpload::create([
+            'maturity_level_id' => $levelOne->id,
+            'user_id' => $owner->id,
+            'file_path' => 'evidence_pdfs/level-1-rejected.pdf',
+            'original_filename' => 'level-1-rejected.pdf',
+            'status' => 'rejected',
+            'rejection_note' => 'Perlu revisi',
+            'uploaded_at' => now(),
+        ]);
+        $upload = EvidenceUpload::create([
+            'maturity_level_id' => $levelTwo->id,
+            'user_id' => $owner->id,
+            'file_path' => 'evidence_pdfs/level-2.pdf',
+            'original_filename' => 'level-2.pdf',
+            'status' => 'pending',
+            'uploaded_at' => now(),
+        ]);
+
+        $this->actingAs($verifier)
+            ->post(route('admin.verify', $upload), ['status' => 'approved'])
+            ->assertStatus(403);
+    }
+
+    public function test_blocked_previous_rejection_appears_on_next_level_even_without_pending_file(): void
+    {
+        $verifier = User::factory()->create(['role' => 'admin']);
+        $criteria = Kriteria::create(['code' => 'K5', 'title' => 'Kriteria blocked']);
+        $subCriteria = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K5.1', 'title' => 'Sub Kriteria blocked']);
+        $levelOne = MaturityLevel::create(['sub_criteria_id' => $subCriteria->id, 'level' => 1, 'evidence_requirement' => 'PDF']);
+        $levelTwo = MaturityLevel::create(['sub_criteria_id' => $subCriteria->id, 'level' => 2, 'evidence_requirement' => 'PDF']);
+        $owner = User::factory()->create(['role' => 'user']);
+
+        EvidenceUpload::create([
+            'maturity_level_id' => $levelOne->id,
+            'user_id' => $owner->id,
+            'file_path' => 'evidence_pdfs/level-1-rejected.pdf',
+            'original_filename' => 'level-1-rejected.pdf',
+            'status' => 'rejected',
+            'rejection_note' => 'Perlu revisi',
+            'uploaded_at' => now(),
+        ]);
+
+        $this->actingAs($verifier)
+            ->get(route('admin.queue', [
+                'criteria_id' => $criteria->id,
+                'sub_criteria_id' => $subCriteria->id,
+                'level_id' => $levelTwo->id,
+            ]))
+            ->assertOk()
+            ->assertSee('Level terkunci: dokumen pada level sebelumnya masih perlu revisi atau belum selesai dinilai.');
     }
 
     public function test_other_user_cannot_delete_until_owner_approves(): void
