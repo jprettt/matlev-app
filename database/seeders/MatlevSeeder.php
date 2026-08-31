@@ -5,10 +5,544 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use App\Support\UploadDetailImporter;
 
 class MatlevSeeder extends Seeder
 {
+    private function seedEvidenceRequirementsFromSource(): void
+    {
+        $fixedRequirements = $this->parseFixedEvidenceRequirements();
+
+        $levels = DB::table('maturity_levels')
+            ->select('id', 'level', 'sub_criteria_id')
+            ->orderBy('id')
+            ->get();
+
+        foreach ($levels as $level) {
+            $subCriteria = DB::table('sub_criterias')->where('id', $level->sub_criteria_id)->value('code');
+            $entries = collect($fixedRequirements)
+                ->filter(fn ($item) => ($item['sub_criteria_code'] ?? null) === $subCriteria && (int) ($item['level'] ?? 0) === (int) $level->level)
+                ->values();
+
+            if ($entries->isEmpty()) {
+                continue;
+            }
+
+            $existingCount = DB::table('evidence_requirements')
+                ->where('maturity_level_id', $level->id)
+                ->count();
+
+            if ($existingCount > 0) {
+                continue;
+            }
+
+            foreach ($entries as $index => $entry) {
+                $periods = max(1, (int) ($entry['periods'] ?? 1));
+                $requirementId = DB::table('evidence_requirements')->insertGetId([
+                    'maturity_level_id' => $level->id,
+                    'name' => $entry['name'] ?? 'Bukti ' . ($subCriteria ?? 'Subkriteria') . ' Level ' . $level->level,
+                    'description' => $entry['description'] ?? trim((string) ($level->overall_description ?? $level->description ?? 'Dokumen pendukung untuk level ' . $level->level)),
+                    'is_required' => true,
+                    'allowed_file_type' => 'pdf',
+                    'allowed_file_types' => 'pdf',
+                    'max_file_size' => 10240,
+                    'minimum_slots' => $periods,
+                    'maximum_slots' => $periods,
+                    'evidence_mode' => 'FIXED',
+                    'sort_order' => $index + 1,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                for ($slot = 1; $slot <= $periods; $slot++) {
+                    DB::table('evidence_slots')->insert([
+                        'evidence_requirement_id' => $requirementId,
+                        'name' => $periods > 1 ? 'Periode ' . $slot : ($entry['name'] ?? 'Bukti ' . ($subCriteria ?? 'Subkriteria') . ' Level ' . $level->level),
+                        'description' => $entry['description'] ?? trim((string) ($level->overall_description ?? $level->description ?? 'Dokumen pendukung untuk level ' . $level->level)),
+                        'is_required' => true,
+                        'sort_order' => $slot,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+    }
+
+    private function parseFixedEvidenceRequirements(): array
+    {
+        $source = <<<'TEXT'
+## KRITERIA 1: Leadership & Management Commitment
+
+### Sub Kriteria 1.1 — Menyusun RKAP Bidang K3 berdasarkan kajian IBPPR terhadap aktifitas operasional unit
+
+**Level 1**
+- Komitmen/kebijakan K3 unit 
+- Dokumen IBPPR
+
+**Level 2**
+- Komitmen/kebijakan K3 unit — Sudah ditandatangani semua manajemen
+- Dokumen IBPPR — Sudah direview 1 tahun sekali
+- Dokumen RKAP — Tidak terinci programnya untuk khusus K3 dan masih bergabung dengan anggaran lain (dicek PRK program)
+
+**Level 3**
+- Komitmen/kebijakan K3 unit — Ditandatangani semua manajemen dan terdapat kebijakan K3 khusus lainnya sebagai penunjang operasional K3, seperti kebijakan SWA/larangan-larangan lainnya
+- IBPPR — Terupdate 1 tahun sekali dan menggambarkan daftar program mitigasi bahaya operasional unit berdasarkan identifikasi bahaya yang dilakukan, dituangkan dalam program kerja K3
+- Dokumen penetapan kesediaan anggaran K3 secara terpisah — Dokumen penetapan kesediaan anggaran K3 secara terpisah meskipun masih bersifat operasional rutin (daftar PRK, SK penetapan)
+
+**Level 4**
+- Bukti sosialisasi komitmen dan program K3 — Bukti sosialisasi komitmen dan program K3
+- Monitoring realisasi dari program kerja — Monitoring realisasi dari program kerja terhadap realisasi penyerapan anggaran sesuai penetapan anggaran K3 per unit/per PRK, dilengkapi catatan histori jika terjadi perubahan perencanaan anggaran K3 selama operasional berjalan
+
+**Level 5**
+- OFI dan AFI — OFI dan AFI evaluasi realisasi program kerja tahun sebelumnya
+
+---
+
+### Sub Kriteria 1.2 — Menerapkan Contractor Safety Management System (CSMS)
+
+**Level 1**
+- Tidak ada bukti wajib pada level ini
+
+**Level 2**
+- Klausul pengaturan CSMS dalam dokumen kontrak
+- Dokumen Risk Assessment Pekerjaan yang akan ditenderkan
+
+**Level 3**
+- Dokumen Risk Assessment Pekerjaan
+- Dokumen bukti pelaksanaan Pra Kualifikasi CSMS
+- Bukti PJA, WIP dalam aplikasi CSMS
+
+**Level 4**
+- Daftar seluruh Kontraktor
+- Daftar Kontraktor bersertifikat CSMS — Bersertifikat CSMS
+- Daftar inventaris kontrak pekerjaan — Wajib full cycle CSMS
+- Dokumen Pre Job Activity, Work In Progress, Final Evaluation
+
+**Level 5**
+- Evaluasi pelaksanaan CSMS, tindak lanjut, dan rekomendasi perbaikan kepada Kontraktor
+
+---
+
+### Sub Kriteria 1.3 — Membangun Sistem Manajemen K3 Terintegrasi
+
+**Level 1**
+- Tidak ada bukti wajib pada level ini (kondisi awal/belum ada dokumen)
+
+**Level 2**
+- Dokumen Integrasi ISO 45001:2018
+
+**Level 3**
+- Dokumen Integrasi ISO 45001:2018 — Dokumen integrasinya telah meliputi seluruh Unit Pelaksana
+
+**Level 4**
+- Sertifikat SMK3 PP 50/2012 dan ISO 45001:2018
+
+**Level 5**
+- Monitoring tindaklanjut — Monitoring tindaklanjut temuan audit internal maupun audit eksternal
+
+---
+
+## KRITERIA 2: Audit, Assessment and Inspection
+
+### Sub Kriteria 2.1 — Melakukan Inspeksi K3 Manajemen
+
+**Level 1**
+- Laporan Investigasi Kecelakaan Kerja
+- Berita Acara Klarifikasi
+
+**Level 2**
+- Monitoring rencana/realisasi
+- Dokumentasi inspeksi K3
+- Form Inspeksi K3
+
+**Level 3**
+- Monitoring rencana/realisasi
+- Dokumentasi inspeksi K3
+- Form Inspeksi K3 — Terdapat catatan temuan
+
+**Level 4**
+- Dokumentasi laporan inspeksi K3 Manajemen pada Aplikasi INSPEKTA — Dilakukan pada Aplikasi INSPEKTA
+
+**Level 5**
+- Dokumentasi laporan inspeksi K3 Manajemen pada Aplikasi INSPEKTA — General Manager, Manajer Unit Pelaksana & Manajer Unit Layanan melaksanakan inspeksi K3 1 kali setiap bulan dan temuannya dilaporkan melalui Aplikasi K3 Korporat (Inspekta)
+- Monitoring temuan inspeksi K3 Manajemen di aplikasi INSPEKTA dan monitoring tindak lanjutnya
+
+---
+
+### Sub Kriteria 2.2 — Melakukan Audit Internal SMK3
+
+**Level 1**
+- Tidak ada bukti wajib pada level ini (kondisi awal/belum ada dokumen)
+
+**Level 2**
+- Daftar Unit bersertifikasi SMK3
+- Jadwal Audit Internal
+- Berita Acara Audit Internal
+
+**Level 3**
+- Daftar Unit bersertifikasi SMK3
+- Jadwal Audit Internal — Dilaksanakan sesuai target waktu (1 tahun sekali)
+- Berita Acara Audit Internal — Dilaksanakan sesuai target waktu (1 tahun sekali)
+- Monitoring tindaklanjut — Monitoring tindaklanjut temuan ketidaksesuaian dan PIC-nya
+
+**Level 4**
+- Monitoring tindaklanjut — Monitoring tindaklanjut temuan ketidaksesuaian 100% telah selesai ditindaklanjuti
+
+**Level 5**
+- Dokumentasi RTM
+- Notulen RTM
+- OFI dan AFI
+
+---
+
+### Sub Kriteria 2.3 — Melakukan Audit K3 pada Mitra Kerja
+
+**Level 1**
+- Dokumen Audit K3 mitra kerja — Belum melaksanakan Audit K3 Mitra Kerja atau hanya dilakukan pada mitra kerja di Unit Induk
+
+**Level 2**
+- Dokumen Audit K3 mitra kerja — Hanya dilakukan pada mitra kerja di Unit Induk dan sebagian mitra kerja Unit Pelaksana
+
+**Level 3**
+- Dokumen Audit K3 mitra kerja — Dilakukan pada mitra kerja di Unit Induk dan seluruh mitra kerja di Unit Pelaksana
+- Laporan Rekomendasi Perbaikan — Rekomendasi perbaikan dari temuan ketidaksesuaian dan penanggung jawabnya
+
+**Level 4**
+- Monitoring realisasi — Monitoring realisasi tindak lanjut temuan 100%
+
+**Level 5**
+- OFI dan AFI
+
+---
+
+### Sub Kriteria 2.4 — Melakukan Pengukuran Lingkungan Kerja
+
+**Level 1**
+- Dokumen laporan hasil pengukuran lingkungan kerja — Belum melaksanakan pengukuran lingkungan kerja atau pengukuran hanya dilakukan di sebagian Unit
+
+**Level 2**
+- Dokumen laporan hasil pengukuran lingkungan kerja — Pengukuran lingkungan kerja hanya dilakukan di Unit Induk dan sebagian Unit Pelaksana
+
+**Level 3**
+- Monitoring tindaklanjut — Monitoring tindak lanjut temuan ketidaksesuaian dan PIC-nya
+
+**Level 4**
+- Monitoring realisasi — Monitoring realisasi tindak lanjut temuan ketidaksesuaian
+- Sertifikat kompetensi pelaksana — Sertifikat kompetensi pelaksana pengukuran lingkungan kerja
+
+**Level 5**
+- OFI dan AFI
+
+---
+
+### Sub Kriteria 2.5 — Melakukan Pemeriksaan Kesehatan Pegawai
+
+**Level 1**
+- Tidak ada bukti wajib pada level ini (kondisi awal/belum ada dokumen)
+
+**Level 2**
+- Daftar pegawai yang ber-hak — Daftar pegawai yang ber-hak di Unit Induk dan sebagian Unit Pelaksana
+- Laporan hasil pemeriksaan kesehatan — Laporan hasil pemeriksaan kesehatan di Unit Induk dan sebagian Unit Pelaksana
+
+**Level 3**
+- Daftar pegawai yang ber-hak — Daftar pegawai yang ber-hak di Unit Induk dan seluruh Unit Pelaksana
+- Laporan hasil pemeriksaan kesehatan — Laporan hasil pemeriksaan kesehatan Unit Induk dan seluruh Unit Pelaksana
+- Rekapan hasil pemeriksaan — Rekap 10 penyakit dominan dan rencana pencegahan PAK
+
+**Level 4**
+- Monitoring realisasi — Monitoring realisasi pencegahan Penyakit Akibat Kerja (PAK) terhadap 10 penyakit dominan
+
+**Level 5**
+- Rekomendasi mutasi atau pemindahan — Rekomendasi mutasi atau pemindahan tempat kerja pegawai yang terjangkit PAK
+
+---
+
+### Sub Kriteria 2.6 — Melakukan Pengukuran Hygiene Factor Mitra Kerja
+
+**Level 1**
+- Tidak ada bukti wajib pada level ini (kondisi awal/belum ada dokumen)
+
+**Level 2**
+- Dokumen laporan pelaksanaan pengukuran Hygiene Factor — Pengukuran dilaksanakan hanya di Unit Induk dan sebagian Unit Pelaksana
+
+**Level 3**
+- Dokumen laporan pelaksanaan pengukuran Hygiene Factor — Pengukuran dilaksanakan di Unit Induk dan seluruh Unit Pelaksana
+- Monitoring tindak lanjut — Monitoring tindak lanjut dari temuan ketidaksesuaian dan penanggung jawabnya
+
+**Level 4**
+- Monitoring realisasi — Monitoring realisasi tindak lanjut temuan ketidaksesuaian
+- Daftar jumlah pekerja masing-masing Mitra Kerja — Jumlah peserta pengukuran mencapai 60% dari jumlah personil Mitra Kerja
+
+**Level 5**
+- OFI dan AFI berdasarkan temuan
+
+---
+
+## KRITERIA 3: Penerapan Identifikasi Bahaya, Penilaian dan Pengendalian Risiko (IBPPR)
+
+### Sub Kriteria 3.1 — Menerapkan Ijin Kerja (WP) pada setiap pekerjaan yang memiliki tingkat risiko sesuai hasil Risk Assessment Pekerjaan
+
+**Level 1**
+- Laporan Investigasi Kecelakaan Kerja
+- Berita Acara Klarifikasi
+
+**Level 2**
+- Dokumen Ijin Kerja (WP)
+- JSA
+- IBPPR
+- SOP/IK
+
+**Level 3**
+- Dokumen Ijin Kerja
+- JSA
+- IBPPR
+- SOP/IK
+- Pengawas Pekerjaan & Pengawas K3 — Pada seluruh jenis pekerjaan
+
+**Level 4**
+- Sertifikat Kompetensi Pengawas Pekerjaan & Pengawas K3
+
+**Level 5**
+- BA Review SOP/IK — BA Review SOP/IK, IBPPR, JSA
+
+---
+
+### Sub Kriteria 3.2 — Menyediakan Sistem Proteksi Kebakaran Instalasi Ketenagalistrikan sesuai IBPPR
+
+**Level 1**
+- Laporan Investigasi Kecelakaan Instalasi (Kebakaran)
+- Berita Acara Klarifikasi Kecelakaan Instalasi (Kebakaran)
+
+**Level 2**
+- Dokumen IBPPR aktifitas rutin dan non rutin unit — Aktifitas rutin/non rutin operasional unit dan perkantoran di Unit Induk dan sebagian Unit Pelaksana atau Sub Unit Pelaksana
+
+**Level 3**
+- Dokumen IBPPR — Aktifitas rutin/non rutin operasional unit dan perkantoran di Unit Induk dan seluruh Unit Pelaksana serta Sub Unit Pelaksana
+- Program mitigasi — Program mitigasi bahaya kebakaran operasional unit (preventive action sampai corrective action)
+- Program penyediaan dalam pemenuhan regulasi
+
+**Level 4**
+- Monitoring kesiapan — Monitoring kesiapan sistem proteksi kebakaran
+- Monitoring rencana dan realisasi — Monitoring rencana dan realisasi penyediaan proteksi kebakaran berbasis keselamatan aset unit
+
+**Level 5**
+- OFI dan AFI
+
+---
+
+### Sub Kriteria 3.3 — Melaksanakan Simulasi Peralatan Proteksi Kebakaran dan Simulasi Tanggap Darurat
+
+**Level 1**
+- Dokumentasi pelaksanaan penggunaan peralatan proteksi kebakaran atau pelaksanaan — Tidak melaksanakan simulasi tanggap darurat, atau hanya melaksanakan penggunaan peralatan proteksi kebakaran, atau hanya melaksanakan simulasi tanggap darurat di Unit Induk
+
+**Level 2**
+- IBPPR
+- Prosedur tanggap darurat/BCP
+- SK Tim Tanggap Darurat
+- Daftar peralatan tanggap bencana
+
+**Level 3**
+- Dokumen pelaksanaan simulasi tanggap darurat
+- Evaluasi efektifitas — Evaluasi efektifitas pelaksanaan simulasi tanggap darurat
+
+**Level 4**
+- Monitoring kesiapan — Monitoring kesiapan sistem proteksi kebakaran
+- Monitoring kesiapan — Monitoring kesiapan peralatan tanggap bencana dan kompetensi personel tim tanggap darurat
+
+**Level 5**
+- Laporan pelaksanaan pelatihan BCP
+- Laporan kerjasama simulasi/Surat Kerjasama dan dokumentasi
+
+---
+
+## KRITERIA 4: Safety Training and Education
+
+### Sub Kriteria 4.1 — Melaksanakan Pelatihan K3 Manajemen
+
+**Level 1**
+- Dokumen rencana pelatihan K3 — Rencana pelatihan K3 Manajemen Unit Induk dan Manajemen Unit Pelaksana, namun belum dilaksanakan sesuai ketentuan
+
+**Level 2**
+- Dokumen rencana pelatihan K3 — Rencana pelatihan K3 Manajemen Unit Induk dan Manajemen Unit Pelaksana, pelatihan dilaksanakan sesuai ketentuan, namun tidak seluruh Manajemen Unit Induk dan Unit Pelaksana mengikuti pelatihan
+- Dokumentasi pelatihan, absensi pelatihan, dan materi pelatihan — Tidak seluruh Manajemen Unit Induk dan Unit Pelaksana mengikuti pelatihan
+
+**Level 3**
+- Dokumen rencana pelatihan K3 — Rencana pelatihan K3 Manajemen Unit Induk dan Manajemen Unit Pelaksana, pelatihan dilaksanakan sesuai ketentuan, serta seluruh Manajemen Unit Induk dan Unit Pelaksana mengikuti pelatihan
+- Dokumentasi — Seluruh Manajemen Unit Induk dan Unit Pelaksana mengikuti pelatihan
+
+**Level 4**
+- Evaluasi pelaksanaan pelatihan
+
+**Level 5**
+- Laporan pelatihan — Laporan pelatihan yang melebihi ketentuan
+- Sertifikat — Sertifikat K3 BNSP/Kemenaker
+
+---
+
+### Sub Kriteria 4.2 — Melakukan Edukasi K3 Internal (Pegawai dan Karyawan Mitra Kerja)
+
+**Level 1**
+- Kronologis Kecelakaan Kerja
+- Berita Acara Kecelakaan Kerja
+
+**Level 2**
+- Dokumentasi, absensi, materi edukasi — Unit Induk dan sebagian Unit Pelaksana
+
+**Level 3**
+- Dokumentasi, absensi, materi edukasi — Unit Induk dan seluruh Unit Pelaksana setiap triwulan (2x)
+
+**Level 4**
+- Dokumentasi, absensi, materi edukasi — Unit Induk dan seluruh Unit Pelaksana setiap triwulan, diikuti oleh semua pegawai dan karyawan mitra kerja (2x)
+- Evaluasi pelaksanaan edukasi K3
+
+**Level 5**
+- Dokumentasi edukasi — Dokumentasi edukasi yang melebihi ketentuan
+- Sertifikat Kompetensi Pengawas dan Pelaksana Pekerjaan
+
+---
+
+## KRITERIA 5: Safety Campaign and Communication
+
+### Sub Kriteria 5.1 — Melaksanakan Rapat P2K3
+
+**Level 1**
+- Tidak ada bukti wajib
+
+**Level 2**
+- SK tim P2K3 — SK tim P2K3 yang disahkan Disnaker setempat, dilaksanakan oleh sebagian unit
+- Dokumentasi P2K3
+- Daftar hadir — Daftar hadir dari sebagian unit
+- Notulen P2K3
+- Bukti pengiriman — Bukti pengiriman laporan kepada Disnaker setempat
+
+**Level 3**
+- SK tim P2K3 — SK tim P2K3 yang disahkan Disnaker setempat, dilaksanakan oleh seluruh unit
+- Daftar Hadir — Daftar Hadir yang menunjukkan kehadiran pimpinan unit/ketua P2K3 dan perwakilan setiap bidang
+
+**Level 4**
+- Monitoring tindaklanjut — Monitoring tindaklanjut rapat P2K3 hasil temuan atau pembahasan pada rapat P2K3
+
+**Level 5**
+- Monitoring tindaklanjut rapat P2K3 — Monitoring tindaklanjut rapat P2K3 hasil temuan atau pembahasan, serta 100% telah selesai ditindaklanjuti
+
+---
+
+### Sub Kriteria 5.2 — Melakukan Edukasi dan Upaya Pencegahan Kecelakaan Masyarakat Umum dan Dampak Aktifitas Ketenagalistrikan terhadap Masyarakat
+
+**Level 1**
+- Tidak ada bukti wajib pada level ini (kondisi awal/belum ada dokumen)
+
+**Level 2**
+- Dokumentasi
+
+**Level 3**
+- Dokumentasi
+- Notulen — Notulen hasil pembahasan pelaksanaan edukasi/sosialisasi
+
+**Level 4**
+- Jadwal rencana edukasi dan kegiatan upaya pencegahan kecelakaan — Jadwal rencana edukasi dan kegiatan upaya pencegahan kecelakaan masyarakat umum selanjutnya
+
+**Level 5**
+- Dokumentasi
+
+---
+
+## KRITERIA 6: Reporting
+
+### Sub Kriteria 6.1 — Melaksanakan Pelaporan pada Aplikasi Inspekta
+
+**Level 1**
+- Statistik laporan harian, mingguan, dan bulanan tiap Unit pada Aplikasi Inspekta (per bulan) — Unit tidak melakukan pelaporan Unsafe Act, Unsafe Condition, Nearmiss, dan Accident melalui Aplikasi Inspekta (6x)
+
+**Level 2**
+- Statistik laporan harian, mingguan, dan bulanan tiap Unit pada Aplikasi Inspekta (per bulan) — Sebagian besar Unit Induk dan Unit Pelaksana tidak melakukan pelaporan Unsafe Act, Unsafe Condition, Nearmiss, dan Accident melalui Aplikasi Inspekta, dan belum menetapkan User sesuai ketentuan (6x)
+
+**Level 3**
+- Data terupdate pegawai dan user active setiap bulannya
+- Bukti rata-rata User Active 5% < X < 10%
+
+**Level 4**
+- Monitoring Tindaklanjut Temuan
+- Data User Active setiap bulan > 10%
+- Bukti RCI > 80%
+- Notulen — Notulen penyampaian monitoring tindak lanjut temuan dan piramida kecelakaan bulanan (6x)
+
+**Level 5**
+- OFI & AFI
+- Bukti RCI > 95%
+TEXT;
+
+        $lines = preg_split('/\R/', $source);
+        $records = [];
+        $currentSubCriteriaCode = null;
+        $currentLevel = null;
+
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if ($trimmed === '') {
+                continue;
+            }
+
+            if (preg_match('/^###\s+Sub\s+Kriteria\s+([0-9]+\.[0-9]+)\b/ui', $trimmed, $subMatch)) {
+                $currentSubCriteriaCode = trim($subMatch[1]);
+                $currentLevel = null;
+                continue;
+            }
+
+            if (preg_match('/^\*\*Level\s+([0-9]+)\*\*$/u', $trimmed, $levelMatch)) {
+                $currentLevel = (int) $levelMatch[1];
+                continue;
+            }
+
+            if ($currentSubCriteriaCode !== null && $currentLevel !== null && preg_match('/^-\s*(.*)$/u', $trimmed, $itemMatch)) {
+                $raw = trim($itemMatch[1]);
+
+                if ($raw === '' || $raw === '-' || preg_match('/^[-–—]+$/u', $raw)) {
+                    continue;
+                }
+
+                if (preg_match('/^(?:Tidak\s+ada\s+bukti\s+wajib|Tidak\s+ada\s+bukti\s+wajib\s+pada\s+level\s+ini|kondisi\s+awal\b|belum\s+ada\s+dokumen\b)/i', $raw)) {
+                    continue;
+                }
+
+                $normalized = strtolower(str_replace(['/', ' ', '-', '_', '—', '–'], '', $raw));
+                if ($currentSubCriteriaCode === '2.1' && $currentLevel === 3 && (
+                    str_contains($normalized, 'monitoringrencanarealisasi') ||
+                    str_contains($normalized, 'dokumentasiinspeksik3')
+                )) {
+                    continue;
+                }
+
+                if ($currentLevel === 5 && ($raw === '' || preg_match('/^[-–—]+$/u', $raw))) {
+                    continue;
+                }
+
+                $periods = 1;
+                if (preg_match('/\((\d+)\s*x\)/i', $raw, $periodMatch)) {
+                    $periods = max(1, (int) $periodMatch[1]);
+                }
+
+                $name = $raw;
+                $description = $raw;
+
+                if (preg_match('/^(.*?)(?:\s*[—-]\s*)(.+)$/u', $raw, $parts)) {
+                    $name = trim($parts[1]);
+                    $description = trim($parts[2]);
+                }
+
+                $records[] = [
+                    'sub_criteria_code' => $currentSubCriteriaCode,
+                    'level' => $currentLevel,
+                    'name' => $name,
+                    'description' => $description,
+                    'periods' => $periods,
+                ];
+            }
+        }
+
+        return $records;
+    }
+
     public function run(): void
     {
         // 1. Matikan Foreign Key Constraint & Bersihkan Data Lama
@@ -186,7 +720,15 @@ class MatlevSeeder extends Seeder
             'level_number' => DB::raw('level'),
         ]);
 
-        UploadDetailImporter::import(base_path('detail upload.xlsx'));
+        $this->seedEvidenceRequirementsFromSource();
+
+        $levels = DB::table('maturity_levels')->get();
+        foreach ($levels as $level) {
+            $hasEvidence = DB::table('evidence_requirements')->where('maturity_level_id', $level->id)->exists();
+            DB::table('maturity_levels')->where('id', $level->id)->update([
+                'evidence_mode' => $hasEvidence ? 'FIXED' : 'NONE',
+            ]);
+        }
 
         $budi = DB::table('users')->where('email', 'budi@matlev.test')->value('id');
         $andi = DB::table('users')->where('email', 'andi@matlev.test')->value('id');
