@@ -70,6 +70,9 @@ class AdminController extends Controller
         }
 
         $criterias = $criteriaQuery->get();
+        $selectedCriteria = $criterias->firstWhere('id', $request->query('criteria_id')) ?? $criterias->first();
+        $selectedSub = $selectedCriteria?->subKriterias->firstWhere('id', $request->query('sub_criteria_id')) ?? $selectedCriteria?->subKriterias->first();
+        $selectedLevel = $selectedSub?->maturityLevels->firstWhere('id', $request->query('level_id')) ?? $selectedSub?->maturityLevels->first();
 
         foreach ($criterias as $criteria) {
             foreach ($criteria->subKriterias as $sub) {
@@ -84,9 +87,7 @@ class AdminController extends Controller
 
                     $previousLevels = $levels->where('level', '<', $level->level);
                     $isBlocked = $previousLevels->isNotEmpty() && $previousLevels->contains(function ($previousLevel) {
-                        $previousPending = $previousLevel->evidenceUploads->where('status', 'pending')->count();
-                        $previousReviewed = $previousLevel->evidenceUploads->contains(fn ($upload) => in_array($upload->status, ['approved', 'rejected'], true));
-                        return $previousPending > 0 || ! $previousReviewed;
+                        return ! $this->isLevelReadyForReview($previousLevel);
                     });
 
                     $level->review_status = $pendingUploads->isNotEmpty()
@@ -99,8 +100,11 @@ class AdminController extends Controller
         }
 
         $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
+        $selectedCriteriaId = $selectedCriteria?->id ?? $criterias->first()?->id ?? null;
+        $selectedSubId = $selectedSub?->id ?? $selectedCriteria?->subKriterias->first()?->id ?? null;
+        $selectedLevelId = $selectedLevel?->id ?? $selectedSub?->maturityLevels->first()?->id ?? null;
 
-        return view('admin.queue', compact('criterias', 'criteriaOptions'));
+        return view('admin.queue', compact('criterias', 'criteriaOptions', 'selectedCriteriaId', 'selectedSubId', 'selectedLevelId'));
     }
 
     public function activityHistory(Request $request)
@@ -119,6 +123,18 @@ class AdminController extends Controller
         return view('admin.activity', compact('activityLogs', 'activityTypes'));
     }
 
+    private function isLevelReadyForReview(MaturityLevel $level): bool
+    {
+        if (strtoupper((string) $level->evidence_mode) === 'NONE') {
+            return true;
+        }
+
+        $previousPending = $level->evidenceUploads()->where('status', 'pending')->exists();
+        $hasReviewed = $level->evidenceUploads()->whereIn('status', ['approved', 'rejected'])->exists();
+
+        return ! $previousPending && $hasReviewed;
+    }
+
     private function ensureReviewOrder(EvidenceUpload $upload): void
     {
         $level = $upload->maturityLevel;
@@ -132,10 +148,7 @@ class AdminController extends Controller
             ->get();
 
         foreach ($previousLevels as $previousLevel) {
-            $previousPending = $previousLevel->evidenceUploads()->where('status', 'pending')->exists();
-            $previousReviewed = $previousLevel->evidenceUploads()->whereIn('status', ['approved', 'rejected'])->exists();
-
-            if ($previousPending || ! $previousReviewed) {
+            if (! $this->isLevelReadyForReview($previousLevel)) {
                 abort(403, 'Level yang sedang dinilai belum bisa diproses karena level sebelumnya masih belum selesai dinilai.');
             }
         }
@@ -209,7 +222,15 @@ class AdminController extends Controller
                 ? 'Dokumen berhasil ditolak dengan catatan alasan.'
                 : 'Status dokumen dikembalikan ke pending.');
 
-        return back()->with('success', $message);
+        $criteria = $upload->maturityLevel?->subkriteria?->kriteria;
+        $subCriteria = $upload->maturityLevel?->subkriteria;
+        $level = $upload->maturityLevel;
+
+        return redirect()->route('admin.queue', [
+            'criteria_id' => $criteria?->id,
+            'sub_criteria_id' => $subCriteria?->id,
+            'level_id' => $level?->id,
+        ])->with('success', $message);
     }
 
     public function storeCriteria(Request $request)

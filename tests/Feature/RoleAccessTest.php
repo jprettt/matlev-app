@@ -125,6 +125,58 @@ class RoleAccessTest extends TestCase
             ->assertSee('Semua Aktivitas');
     }
 
+    public function test_verifier_redirect_keeps_selected_queue_tab_after_review(): void
+    {
+        $owner = User::factory()->create(['role' => 'user']);
+        $verifier = User::factory()->create(['role' => 'admin']);
+        $criteria = Kriteria::create(['code' => 'K2', 'title' => 'Kriteria tambahan']);
+        $subCriteria = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K2.1', 'title' => 'Sub Kriteria tambahan']);
+        $level = MaturityLevel::create(['sub_criteria_id' => $subCriteria->id, 'level' => 2, 'evidence_requirement' => 'PDF']);
+        $upload = EvidenceUpload::create([
+            'maturity_level_id' => $level->id,
+            'user_id' => $owner->id,
+            'file_path' => 'evidence_pdfs/selected-level.pdf',
+            'original_filename' => 'selected-level.pdf',
+            'status' => 'pending',
+            'uploaded_at' => now(),
+        ]);
+
+        $this->actingAs($verifier)
+            ->from(route('admin.queue', [
+                'criteria_id' => $criteria->id,
+                'sub_criteria_id' => $subCriteria->id,
+                'level_id' => $level->id,
+            ]))
+            ->post(route('admin.verify', $upload), ['status' => 'approved'])
+            ->assertRedirect(route('admin.queue', [
+                'criteria_id' => $criteria->id,
+                'sub_criteria_id' => $subCriteria->id,
+                'level_id' => $level->id,
+            ]));
+    }
+
+    public function test_verifier_can_review_next_level_when_previous_level_is_auto_fulfilled_without_upload(): void
+    {
+        $verifier = User::factory()->create(['role' => 'admin']);
+        $owner = User::factory()->create(['role' => 'user']);
+        $criteria = Kriteria::create(['code' => 'K3', 'title' => 'Kriteria auto']);
+        $subCriteria = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => 'K3.1', 'title' => 'Sub Kriteria auto']);
+        $levelOne = MaturityLevel::create(['sub_criteria_id' => $subCriteria->id, 'level' => 1, 'evidence_mode' => 'NONE', 'evidence_requirement' => 'Tidak perlu bukti']);
+        $levelTwo = MaturityLevel::create(['sub_criteria_id' => $subCriteria->id, 'level' => 2, 'evidence_requirement' => 'PDF']);
+        $upload = EvidenceUpload::create([
+            'maturity_level_id' => $levelTwo->id,
+            'user_id' => $owner->id,
+            'file_path' => 'evidence_pdfs/level-2.pdf',
+            'original_filename' => 'level-2.pdf',
+            'status' => 'pending',
+            'uploaded_at' => now(),
+        ]);
+
+        $this->actingAs($verifier)
+            ->post(route('admin.verify', $upload), ['status' => 'approved'])
+            ->assertSessionHas('success');
+    }
+
     public function test_other_user_cannot_delete_until_owner_approves(): void
     {
         Storage::fake('public');

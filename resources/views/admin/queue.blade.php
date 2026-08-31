@@ -5,16 +5,49 @@
 @section('content')
 @php
     $firstCriteria = $criterias->first();
-    $initialCriteria = $firstCriteria?->id ?? '';
+    $initialCriteria = $selectedCriteriaId ?? ($firstCriteria?->id ?? '');
     $firstSub = $firstCriteria?->subKriterias->first();
-    $initialSub = $firstSub?->id ?? '';
+    $initialSub = $selectedSubId ?? ($firstSub?->id ?? '');
     $firstLevel = $firstSub?->maturityLevels->first();
+    $initialLevel = $selectedLevelId ?? ($firstLevel?->id ?? '');
 @endphp
 
 <div class="min-h-screen bg-slate-50/40" x-data="{
     activeCriteria: '{{ $initialCriteria }}',
     activeSub: '{{ $initialSub }}',
-    activeLevel: '{{ $firstLevel?->id ?? '' }}',
+    activeLevel: '{{ $initialLevel }}',
+    updateTabState() {
+        const params = new URLSearchParams(window.location.search);
+        if (this.activeCriteria) {
+            params.set('criteria_id', this.activeCriteria);
+        } else {
+            params.delete('criteria_id');
+        }
+        if (this.activeSub) {
+            params.set('sub_criteria_id', this.activeSub);
+        } else {
+            params.delete('sub_criteria_id');
+        }
+        if (this.activeLevel) {
+            params.set('level_id', this.activeLevel);
+        } else {
+            params.delete('level_id');
+        }
+
+        const url = new URL(window.location.href);
+        url.search = params.toString();
+        window.history.replaceState({}, '', url.toString());
+    },
+    syncFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const criteriaId = params.get('criteria_id');
+        const subId = params.get('sub_criteria_id');
+        const levelId = params.get('level_id');
+
+        if (criteriaId) this.activeCriteria = criteriaId;
+        if (subId) this.activeSub = subId;
+        if (levelId) this.activeLevel = levelId;
+    },
     scrollTabToTop(selector) {
         const el = document.querySelector(selector);
         if (!el) return;
@@ -31,7 +64,7 @@
         };
         requestAnimationFrame(tick);
     }
-}">
+}" x-init="syncFromUrl()">
     <div class="mx-auto max-w-[1500px] px-4 pt-6 sm:px-6 lg:px-8">
         <header class="flex flex-col justify-between gap-5 border-b border-stone-200 pb-7 md:flex-row md:items-end">
             <div>
@@ -44,7 +77,7 @@
         <nav id="criteria-tabs" class="mt-7 flex gap-2 overflow-x-auto pb-1" role="tablist">
             @foreach($criterias as $tab)
                 <button type="button"
-                    @click="activeCriteria='{{ $tab->id }}'; activeSub='{{ $tab->subKriterias->first()->id ?? '' }}'; activeLevel='{{ $tab->subKriterias->first()?->maturityLevels->first()->id ?? '' }}'; scrollTabToTop('#criteria-tabs');"
+                    @click="activeCriteria='{{ $tab->id }}'; activeSub='{{ $tab->subKriterias->first()->id ?? '' }}'; activeLevel='{{ $tab->subKriterias->first()?->maturityLevels->first()->id ?? '' }}'; updateTabState(); scrollTabToTop('#criteria-tabs');"
                     :class="activeCriteria === '{{ $tab->id }}' ? 'bg-[#b89416] text-white shadow-lg shadow-yellow-950/20' : 'border border-stone-200 bg-white text-stone-600'"
                     class="shrink-0 rounded-xl px-5 py-3 text-sm font-extrabold">
                     {{ $tab->code }}
@@ -80,7 +113,7 @@
                         <nav id="subcriteria-tabs-{{ $criteria->id }}" class="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Sub kriteria">
                             <div class="flex min-w-max gap-2">
                                 @foreach($criteria->subKriterias as $subTab)
-                                    <button type="button" @click="activeSub='{{ $subTab->id }}'; activeLevel='{{ $subTab->maturityLevels->first()->id ?? '' }}'; scrollTabToTop('#subcriteria-tabs-{{ $criteria->id }}');" :class="activeSub === '{{ $subTab->id }}' ? 'bg-[#b89416] text-white' : 'border border-stone-200 bg-white text-stone-700'" class="max-w-xs rounded-lg px-4 py-2.5 text-left text-xs font-extrabold">
+                                    <button type="button" @click="activeSub='{{ $subTab->id }}'; activeLevel='{{ $subTab->maturityLevels->first()->id ?? '' }}'; updateTabState(); scrollTabToTop('#subcriteria-tabs-{{ $criteria->id }}');" :class="activeSub === '{{ $subTab->id }}' ? 'bg-[#b89416] text-white' : 'border border-stone-200 bg-white text-stone-700'" class="max-w-xs rounded-lg px-4 py-2.5 text-left text-xs font-extrabold">
                                         {{ $subTab->code }}
                                         <span class="mt-1 block max-w-[260px] truncate font-semibold opacity-80">{{ $subTab->title }}</span>
                                     </button>
@@ -118,7 +151,7 @@
                                                         ? 'bg-[#f3c13a] text-[#4d3b00] border border-[#f3c13a]'
                                                         : 'border border-stone-200 bg-white text-stone-600');
                                             @endphp
-                                            <button type="button" @click="activeLevel='{{ $levelTab->id }}'; scrollTabToTop('#level-tabs-{{ $sub->id }}');" :class="activeLevel === '{{ $levelTab->id }}' ? '{{ $buttonClass }}' : '{{ $buttonClass }}'" class="relative shrink-0 rounded-lg px-4 py-2.5 text-xs font-extrabold">
+                                            <button type="button" @click="activeLevel='{{ $levelTab->id }}'; updateTabState(); scrollTabToTop('#level-tabs-{{ $sub->id }}');" :class="activeLevel === '{{ $levelTab->id }}' ? '{{ $buttonClass }}' : '{{ $buttonClass }}'" class="relative shrink-0 rounded-lg px-4 py-2.5 text-xs font-extrabold">
                                                 Level {{ $levelTab->level }}
                                                 @if($count > 0)
                                                     <span class="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-black">{{ $count }}</span>
@@ -133,12 +166,16 @@
                                                 ->where('status', 'pending')
                                                 ->sortByDesc('uploaded_at')
                                                 ->values();
+                                            $reviewedUploads = $level->evidenceUploads
+                                                ->reject(fn ($upload) => $upload->status === 'pending')
+                                                ->sortByDesc('uploaded_at')
+                                                ->values();
                                             $state = $level->review_status ?? 'neutral';
                                             $warningText = $state === 'red'
                                                 ? 'File perlu dinilai'
                                                 : ($state === 'yellow'
                                                     ? 'Menunggu level sebelumnya selesai dinilai'
-                                                    : 'Tidak ada file pending');
+                                                    : ($reviewedUploads->isNotEmpty() ? 'Sudah dinilai' : 'Tidak ada file pending'));
                                         @endphp
 
                                         <div x-show="activeLevel === '{{ $level->id }}'" x-transition class="space-y-3">
@@ -148,12 +185,14 @@
                                                     <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider {{ $state === 'red' ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-700' }}">
                                                         {{ $warningText }}
                                                     </span>
+                                                @elseif($reviewedUploads->isNotEmpty())
+                                                    <span class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Sudah dinilai</span>
                                                 @else
                                                     <span class="inline-flex items-center rounded-full border border-stone-200 bg-stone-100 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-stone-600">Belum upload</span>
                                                 @endif
                                             </div>
 
-                                            @if($pendingUploads->isEmpty())
+                                           @if($level->evidenceUploads->isEmpty())
                                                 <div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
                                                     @forelse($level->evidenceRequirements as $requirement)
                                                         <div class="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
@@ -188,12 +227,32 @@
                                                     @endforelse
                                                 </div>
                                             @else
-                                                @foreach($pendingUploads as $upload)
+                                                @php
+                                                   $uploads = $level->evidenceUploads
+                                                       ->sortByDesc('uploaded_at')
+                                                       ->values();
+                                               @endphp
+
+                                        @foreach($uploads as $upload)
                                                     @php
                                                         $requirement = $upload->evidenceRequirement;
                                                         $fileName = $upload->original_filename ?: basename($upload->file_path ?? '');
-                                                        $uploadStatus = $state === 'red' ? 'Perlu dinilai' : 'Menunggu prioritas';
-                                                        $uploadStatusClass = $state === 'red' ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-700';
+                                                        $isReviewed = in_array($upload->status, ['approved', 'rejected'], true);
+                                                        $uploadStatus = match ($upload->status) {
+                                                            'approved' => 'Disetujui',
+                                                            'rejected' => 'Ditolak',
+                                                            default => ($state === 'red' ? 'Perlu dinilai' : 'Menunggu prioritas'),
+                                                        };
+                                                        $uploadStatusClass = match ($upload->status) {
+                                                            'approved' => 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                                                            'rejected' => 'border-rose-200 bg-rose-50 text-rose-700',
+                                                            default => ($state === 'red' ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-700'),
+                                                        };
+                                                        $uploadDotClass = match ($upload->status) {
+                                                            'approved' => 'bg-emerald-500',
+                                                            'rejected' => 'bg-rose-500',
+                                                            default => ($state === 'red' ? 'bg-red-500' : 'bg-amber-500'),
+                                                        };
                                                     @endphp
 
                                                     <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
@@ -202,12 +261,12 @@
                                                                 @if($requirement){{ $requirement->name }}@else Bukti file @endif
                                                             </span>
                                                             <span class="inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-bold {{ $uploadStatusClass }}">
-                                                                <span class="inline-block h-2 w-2 rounded-full {{ $state === 'red' ? 'bg-red-500' : 'bg-amber-500' }}"></span>
+                                                                <span class="inline-block h-2 w-2 rounded-full {{ $uploadDotClass }}"></span>
                                                                 {{ $uploadStatus }}
                                                             </span>
                                                         </div>
 
-                                                        <div class="grid gap-4 lg:grid-cols-[1.2fr_1.3fr_0.9fr] lg:items-start">
+                                                        <div class="grid gap-4 @if($upload->status === 'pending') lg:grid-cols-[1.2fr_1.3fr_0.9fr] @else lg:grid-cols-[1.2fr_1.3fr] @endif lg:items-start">
                                                             <div class="min-w-0">
                                                                 <div class="text-xs font-bold uppercase tracking-[.18em] text-stone-500">
                                                                     {{ $upload->uploaded_at ? $upload->uploaded_at->timezone(config('app.timezone'))->format('d M Y H:i') . ' WITA' : '-' }}
@@ -231,66 +290,78 @@
                                                                 </div>
                                                             </div>
 
-                                                            <div x-data="{
-                                                                approveOpen: false,
-                                                                rejectOpen: false,
-                                                                rejectionReason: ''
-                                                            }" class="space-y-2">
-                                                                <button type="button" @click="approveOpen = true" class="w-full rounded-xl bg-[#1b8f5a] px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#147a4d]">
-                                                                    Setujui
-                                                                </button>
+                                                            @if($upload->status === 'pending')
+                                                                <div x-data="{
+                                                                    approveOpen: false,
+                                                                    rejectOpen: false,
+                                                                    rejectionReason: ''
+                                                                }" class="space-y-2">
+                                                                    <button type="button" @click="approveOpen = true" class="w-full rounded-xl bg-[#1b8f5a] px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#147a4d]">
+                                                                        Setujui
+                                                                    </button>
 
-                                                                <button type="button" @click="rejectOpen = true" class="w-full rounded-xl bg-[#d93025] px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#bc2a20]">
-                                                                    Tolak & Simpan Catatan
-                                                                </button>
+                                                                    <button type="button" @click="rejectOpen = true" class="w-full rounded-xl bg-[#d93025] px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-[#bc2a20]">
+                                                                        Tolak & Simpan Catatan
+                                                                    </button>
 
-                                                                <div x-show="approveOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" style="display: none;">
-                                                                    <div @click.self="approveOpen = false" class="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl">
-                                                                        <div class="flex items-center justify-between gap-4">
-                                                                            <div>
-                                                                                <p class="text-[10px] font-extrabold uppercase tracking-[.22em] text-stone-500">Konfirmasi</p>
-                                                                                <h3 class="mt-2 text-xl font-extrabold text-stone-900">Yakin setujui dokumen ini?</h3>
+                                                                    <div x-show="approveOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" style="display: none;">
+                                                                        <div @click.self="approveOpen = false" class="w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-2xl">
+                                                                            <div class="flex items-center justify-between gap-4">
+                                                                                <div>
+                                                                                    <p class="text-[10px] font-extrabold uppercase tracking-[.22em] text-stone-500">Konfirmasi</p>
+                                                                                    <h3 class="mt-2 text-xl font-extrabold text-stone-900">Yakin setujui dokumen ini?</h3>
+                                                                                </div>
+                                                                            </div>
+                                                                            <p class="mt-4 text-sm leading-6 text-stone-600">Tindakan ini akan menyetujui berkas yang sedang dinilai. Pastikan Anda sudah mengecek kelengkapan dokumen sebelum melanjutkan.</p>
+                                                                            <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                                                                <button type="button" @click="approveOpen = false" class="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-700 transition hover:bg-stone-50">
+                                                                                    Batal
+                                                                                </button>
+                                                                                <form action="{{ route('admin.verify', $upload->id) }}" method="POST">
+                                                                                    @csrf
+                                                                                    <input type="hidden" name="status" value="approved">
+                                                                                    <button type="submit" class="w-full rounded-xl bg-[#1b8f5a] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#147a4d]">
+                                                                                        Ya, Setujui
+                                                                                    </button>
+                                                                                </form>
                                                                             </div>
                                                                         </div>
-                                                                        <p class="mt-4 text-sm leading-6 text-stone-600">Tindakan ini akan menyetujui berkas yang sedang dinilai. Pastikan Anda sudah mengecek kelengkapan dokumen sebelum melanjutkan.</p>
-                                                                        <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                                                                            <button type="button" @click="approveOpen = false" class="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-700 transition hover:bg-stone-50">
-                                                                                Batal
-                                                                            </button>
-                                                                            <form action="{{ route('admin.verify', $upload->id) }}" method="POST">
+                                                                    </div>
+
+                                                                    <div x-show="rejectOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" style="display: none;">
+                                                                        <div @click.self="rejectOpen = false" class="w-full max-w-xl rounded-2xl border border-stone-200 bg-white p-5 shadow-2xl">
+                                                                            <div class="mb-4">
+                                                                                <p class="text-[10px] font-extrabold uppercase tracking-[.22em] text-stone-500">Alasan penolakan</p>
+                                                                                <h3 class="mt-2 text-xl font-extrabold text-stone-900">Tolak dokumen</h3>
+                                                                            </div>
+
+                                                                            <form action="{{ route('admin.verify', $upload->id) }}" method="POST" class="space-y-3">
                                                                                 @csrf
-                                                                                <input type="hidden" name="status" value="approved">
-                                                                                <button type="submit" class="w-full rounded-xl bg-[#1b8f5a] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#147a4d]">
-                                                                                    Ya, Setujui
-                                                                                </button>
+                                                                                <input type="hidden" name="status" value="rejected">
+                                                                                <textarea x-model="rejectionReason" name="rejection_note" rows="4" required placeholder="Tulis alasan verifikator menolak dokumen..." class="w-full rounded-xl border border-rose-200 bg-rose-50/50 px-3 py-2.5 text-sm text-stone-700 placeholder:text-rose-300 focus:border-rose-300 focus:ring-2 focus:ring-rose-100"></textarea>
+                                                                                <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                                                                    <button type="button" @click="rejectOpen = false" class="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-700 transition hover:bg-stone-50">
+                                                                                        Batal
+                                                                                    </button>
+                                                                                    <button type="submit" class="rounded-xl bg-[#d93025] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#bc2a20]">
+                                                                                        Tolak & Simpan Catatan
+                                                                                    </button>
+                                                                                </div>
                                                                             </form>
                                                                         </div>
                                                                     </div>
                                                                 </div>
-
-                                                                <div x-show="rejectOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4" style="display: none;">
-                                                                    <div @click.self="rejectOpen = false" class="w-full max-w-xl rounded-2xl border border-stone-200 bg-white p-5 shadow-2xl">
-                                                                        <div class="mb-4">
-                                                                            <p class="text-[10px] font-extrabold uppercase tracking-[.22em] text-stone-500">Alasan penolakan</p>
-                                                                            <h3 class="mt-2 text-xl font-extrabold text-stone-900">Tolak dokumen</h3>
-                                                                        </div>
-
-                                                                        <form action="{{ route('admin.verify', $upload->id) }}" method="POST" class="space-y-3">
-                                                                            @csrf
-                                                                            <input type="hidden" name="status" value="rejected">
-                                                                            <textarea x-model="rejectionReason" name="rejection_note" rows="4" required placeholder="Tulis alasan verifikator menolak dokumen..." class="w-full rounded-xl border border-rose-200 bg-rose-50/50 px-3 py-2.5 text-sm text-stone-700 placeholder:text-rose-300 focus:border-rose-300 focus:ring-2 focus:ring-rose-100"></textarea>
-                                                                            <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                                                                                <button type="button" @click="rejectOpen = false" class="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-700 transition hover:bg-stone-50">
-                                                                                    Batal
-                                                                                </button>
-                                                                                <button type="submit" class="rounded-xl bg-[#d93025] px-4 py-2.5 text-sm font-extrabold text-white transition hover:bg-[#bc2a20]">
-                                                                                    Tolak & Simpan Catatan
-                                                                                </button>
-                                                                            </div>
-                                                                        </form>
-                                                                    </div>
+                                                            @else
+                                                                <div class="rounded-xl border border-stone-200 bg-stone-50 p-3">
+                                                                    <p class="text-[10px] font-extrabold uppercase tracking-[.18em] text-stone-500">Status penilaian</p>
+                                                                    <p class="mt-2 text-sm font-extrabold text-stone-800">
+                                                                        {{ $upload->status === 'approved' ? 'Dokumen telah disetujui' : 'Dokumen telah ditolak' }}
+                                                                    </p>
+                                                                    @if($upload->status === 'rejected' && $upload->rejection_note)
+                                                                        <p class="mt-2 text-sm leading-6 text-stone-600">{{ $upload->rejection_note }}</p>
+                                                                    @endif
                                                                 </div>
-                                                            </div>
+                                                            @endif
                                                         </div>
                                                     </div>
                                                 @endforeach
