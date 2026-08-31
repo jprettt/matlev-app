@@ -22,7 +22,11 @@ class AdminController extends Controller
         $rejectedCount = EvidenceUpload::where('status', 'rejected')->count();
         $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
 
-        $recentPendingUploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
+        $recentPendingUploads = EvidenceUpload::with([
+                'user',
+                'maturityLevel.subkriteria.kriteria',
+                'evidenceRequirement'
+            ])
             ->where('status', 'pending')
             ->when($request->filled('upload_date'), function ($query) use ($request) {
                 $query->whereDate('uploaded_at', $request->upload_date);
@@ -53,23 +57,50 @@ class AdminController extends Controller
             'status' => 'pending',
             'occurred_at' => now(),
         ]);
+
+        $criteriaQuery = Kriteria::with([
+            'subKriterias.maturityLevels.evidenceUploads.user',
+            'subKriterias.maturityLevels.evidenceUploads.evidenceRequirement',
+            'subKriterias.maturityLevels.evidenceRequirements.slots',
+            'subKriterias.maturityLevels.evidenceRequirements',
+        ])->orderBy('code');
+
+        if ($request->filled('criteria_id')) {
+            $criteriaQuery->where('id', $request->criteria_id);
+        }
+
+        $criterias = $criteriaQuery->get();
+
+        foreach ($criterias as $criteria) {
+            foreach ($criteria->subKriterias as $sub) {
+                $levels = $sub->maturityLevels()->orderBy('level')->get();
+                foreach ($levels as $level) {
+                    $pendingUploads = $level->evidenceUploads
+                        ->where('status', 'pending')
+                        ->when($request->filled('upload_date'), function ($uploads) use ($request) {
+                            return $uploads->filter(fn ($upload) => $upload->uploaded_at && $upload->uploaded_at->format('Y-m-d') === $request->upload_date);
+                        })
+                        ->values();
+
+                    $previousLevels = $levels->where('level', '<', $level->level);
+                    $isBlocked = $previousLevels->isNotEmpty() && $previousLevels->contains(function ($previousLevel) {
+                        $previousPending = $previousLevel->evidenceUploads->where('status', 'pending')->count();
+                        $previousReviewed = $previousLevel->evidenceUploads->contains(fn ($upload) => in_array($upload->status, ['approved', 'rejected'], true));
+                        return $previousPending > 0 || ! $previousReviewed;
+                    });
+
+                    $level->review_status = $pendingUploads->isNotEmpty()
+                        ? ($isBlocked ? 'yellow' : 'red')
+                        : 'neutral';
+                    $level->review_pending_count = $pendingUploads->count();
+                    $level->review_blocked = $isBlocked;
+                }
+            }
+        }
+
         $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
 
-        $uploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
-            ->where('status', 'pending')
-            ->when($request->filled('upload_date'), function ($query) use ($request) {
-                $query->whereDate('uploaded_at', $request->upload_date);
-            })
-            ->when($request->filled('criteria_id'), function ($query) use ($request) {
-                $query->whereHas('maturityLevel.subkriteria', function ($subQuery) use ($request) {
-                    $subQuery->where('criteria_id', $request->criteria_id);
-                });
-            })
-            ->orderBy('uploaded_at')
-            ->paginate(12)
-            ->withQueryString();
-
-        return view('admin.queue', compact('uploads', 'criteriaOptions'));
+        return view('admin.queue', compact('criterias', 'criteriaOptions'));
     }
 
     public function activityHistory(Request $request)
@@ -88,6 +119,28 @@ class AdminController extends Controller
         return view('admin.activity', compact('activityLogs', 'activityTypes'));
     }
 
+    private function ensureReviewOrder(EvidenceUpload $upload): void
+    {
+        $level = $upload->maturityLevel;
+        if (! $level) {
+            return;
+        }
+
+        $previousLevels = MaturityLevel::where('sub_criteria_id', $level->sub_criteria_id)
+            ->where('level', '<', $level->level)
+            ->orderBy('level')
+            ->get();
+
+        foreach ($previousLevels as $previousLevel) {
+            $previousPending = $previousLevel->evidenceUploads()->where('status', 'pending')->exists();
+            $previousReviewed = $previousLevel->evidenceUploads()->whereIn('status', ['approved', 'rejected'])->exists();
+
+            if ($previousPending || ! $previousReviewed) {
+                abort(403, 'Level yang sedang dinilai belum bisa diproses karena level sebelumnya masih belum selesai dinilai.');
+            }
+        }
+    }
+
     public function verifyUpload(Request $request, $id)
     {
         $request->validate([
@@ -97,6 +150,11 @@ class AdminController extends Controller
 
         $upload = EvidenceUpload::findOrFail($id);
         abort_if((int) $upload->user_id === (int) Auth::id(), 403, 'Reviewer tidak boleh menilai dokumen yang diunggah sendiri.');
+
+        if (in_array($request->status, ['approved', 'rejected'], true)) {
+            $this->ensureReviewOrder($upload);
+        }
+
         $statusBefore = $upload->status;
         $statusAfter = $request->status;
         $upload->update([

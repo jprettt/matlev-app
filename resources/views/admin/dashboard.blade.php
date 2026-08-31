@@ -63,6 +63,12 @@
                             <td class="px-4 py-3 text-xs text-stone-600">
                                 <div class="font-semibold text-stone-800">{{ $upload->maturityLevel->subkriteria->kriteria->title ?? '-' }}</div>
                                 <div>{{ $upload->maturityLevel->subkriteria->title ?? '-' }} • Level {{ $upload->maturityLevel->level ?? '-' }}</div>
+                                @if($upload->evidenceRequirement)
+                                    <div class="mt-2 text-[11px] font-bold uppercase tracking-wide text-amber-800">Bukti: {{ $upload->evidenceRequirement->name ?? '-' }}</div>
+                                    @if($upload->evidenceRequirement->description)
+                                        <div class="mt-1 max-w-md text-[11px] leading-5 text-stone-600 whitespace-pre-line">{{ Str::limit(strip_tags($upload->evidenceRequirement->description), 180) }}</div>
+                                    @endif
+                                @endif
                             </td>
                             <td class="px-4 py-3 text-xs">
                                 <a href="{{ asset('storage/' . $upload->file_path) }}" target="_blank" class="text-pln-700 hover:text-pln-900 underline">{{ $upload->original_filename }}</a>
