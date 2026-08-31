@@ -39,6 +39,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
         Route::get('/admin/queue', [AdminController::class, 'queue'])->name('admin.queue');
+        Route::get('/admin/verifikasi', [AdminController::class, 'verifikasi'])->name('admin.verifikasi');
         Route::get('/admin/activity', [AdminController::class, 'activityHistory'])->name('admin.activity');
         Route::post('/admin/criteria', [AdminController::class, 'storeCriteria'])->name('admin.criteria.store');
         Route::delete('/admin/criteria/{id}', [AdminController::class, 'destroyCriteria'])->name('admin.criteria.delete');

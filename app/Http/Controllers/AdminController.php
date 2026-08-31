@@ -114,6 +114,31 @@ class AdminController extends Controller
         return view('admin.queue', compact('criterias', 'criteriaOptions', 'selectedCriteriaId', 'selectedSubId', 'selectedLevelId'));
     }
 
+    public function verifikasi(Request $request)
+    {
+        $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
+
+        $pendingUploads = EvidenceUpload::with([
+                'user',
+                'maturityLevel.subkriteria.kriteria',
+                'evidenceRequirement'
+            ])
+            ->where('status', 'pending')
+            ->when($request->filled('upload_date'), function ($query) use ($request) {
+                $query->whereDate('uploaded_at', $request->upload_date);
+            })
+            ->when($request->filled('criteria_id'), function ($query) use ($request) {
+                $query->whereHas('maturityLevel.subkriteria', function ($subQuery) use ($request) {
+                    $subQuery->where('criteria_id', $request->criteria_id);
+                });
+            })
+            ->orderBy('uploaded_at', 'desc')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('admin.verifikasi', compact('pendingUploads', 'criteriaOptions'));
+    }
+
     public function activityHistory(Request $request)
     {
         $activityTypes = collect(['upload', 'revision_upload', 'evaluation']);
