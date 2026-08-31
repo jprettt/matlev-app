@@ -51,11 +51,11 @@
         }
     </script>
 </head>
-<body class="bg-white text-stone-800 font-sans" x-data="{ sidebarOpen: false, sidebarCollapsed: false }">
-    <div class="min-h-screen flex">
-        <aside class="bg-[#b89416] text-white flex flex-col sticky top-0 h-screen shadow-2xl shadow-yellow-900/20 transition-all duration-300 hidden lg:flex" :class="sidebarCollapsed ? 'w-20' : 'w-64'">
-            <div class="px-3 py-6 border-b border-yellow-200/20">
-                <button type="button" @click="sidebarCollapsed = !sidebarCollapsed" class="mb-4 ml-auto flex items-center justify-center p-1 text-white hover:text-yellow-100 transition" :title="sidebarCollapsed ? 'Buka sidebar' : 'Ciutkan sidebar'" aria-label="Ciutkan atau buka sidebar">
+<body class="bg-stone-100 text-stone-800 font-sans" x-data="{ sidebarOpen: false, sidebarCollapsed: false }">
+<div class="min-h-screen flex items-start">
+    <aside class="bg-[#b89416] text-white flex flex-col sticky top-0 h-screen self-start shadow-2xl shadow-yellow-900/20 transition-all duration-300 hidden lg:flex" :class="sidebarCollapsed ? 'w-20' : 'w-64'">
+        <div class="px-3 pt-3 pb-4 border-b border-yellow-200/20">
+            <button type="button" @click="sidebarCollapsed = !sidebarCollapsed" class="mb-3 ml-auto flex items-center justify-center p-1 text-white hover:text-yellow-100 transition" :title="sidebarCollapsed ? 'Buka sidebar' : 'Ciutkan sidebar'" aria-label="Ciutkan atau buka sidebar">
                     <svg class="w-6 h-6 transition-transform" :class="sidebarCollapsed ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
                 </button>
                 <div class="flex items-center justify-center gap-3">
@@ -97,7 +97,7 @@
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
                 </button>
             </div>
-            <div class="flex justify-end items-center gap-3 px-4 sm:px-6 lg:px-8 pt-4">
+            <div class="flex justify-end items-center gap-3 px-4 sm:px-6 lg:px-8 pt-2">
                 <div class="relative" x-data="{ notificationOpen: false }">
                     <button type="button" @click="notificationOpen = !notificationOpen" class="relative w-10 h-10 inline-flex items-center justify-center rounded-lg text-stone-700 hover:bg-stone-100 transition" aria-label="Notifikasi">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.4-1.6A2 2 0 0 1 18 14v-3a6 6 0 0 0-12 0v3a2 2 0 0 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0m6 0H9" /></svg>
@@ -114,7 +114,7 @@
                     </div>
                 </div>
             </div>
-            <main class="p-4 sm:p-6 lg:p-8 max-w-[1600px]">@yield('content')</main>
+            <main class="p-2 sm:p-3 lg:p-4 max-w-[1600px]">@yield('content')</main>
         </div>
     </div>
     <div x-show="sidebarOpen" x-transition class="fixed inset-0 z-50 lg:hidden" style="display: none;">

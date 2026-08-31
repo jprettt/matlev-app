@@ -20,18 +20,28 @@ class AdminController extends Controller
         $pendingCount = EvidenceUpload::where('status', 'pending')->count();
         $approvedCount = EvidenceUpload::where('status', 'approved')->count();
         $rejectedCount = EvidenceUpload::where('status', 'rejected')->count();
+        $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
 
         $recentPendingUploads = EvidenceUpload::with(['user', 'maturityLevel.subkriteria.kriteria'])
             ->where('status', 'pending')
+            ->when($request->filled('upload_date'), function ($query) use ($request) {
+                $query->whereDate('uploaded_at', $request->upload_date);
+            })
+            ->when($request->filled('criteria_id'), function ($query) use ($request) {
+                $query->whereHas('maturityLevel.subkriteria', function ($subQuery) use ($request) {
+                    $subQuery->where('criteria_id', $request->criteria_id);
+                });
+            })
             ->orderBy('uploaded_at')
-            ->limit(8)
+            ->limit(12)
             ->get();
 
         return view('admin.dashboard', compact(
             'pendingCount',
             'approvedCount',
             'rejectedCount',
-            'recentPendingUploads'
+            'recentPendingUploads',
+            'criteriaOptions'
         ));
     }
 
