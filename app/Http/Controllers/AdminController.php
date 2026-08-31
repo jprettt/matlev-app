@@ -20,32 +20,41 @@ class AdminController extends Controller
         $pendingCount = EvidenceUpload::where('status', 'pending')->count();
         $approvedCount = EvidenceUpload::where('status', 'approved')->count();
         $rejectedCount = EvidenceUpload::where('status', 'rejected')->count();
-        $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
+        $totalCount = $pendingCount + $approvedCount + $rejectedCount;
 
-        $recentPendingUploads = EvidenceUpload::with([
+        // Statistik untuk chart atau tampilan
+        $documentsByStatus = [
+            'approved' => $approvedCount,
+            'pending' => $pendingCount,
+            'rejected' => $rejectedCount,
+        ];
+
+        // Top contributors
+        $topContributors = EvidenceUpload::with('user')
+            ->select('user_id', DB::raw('COUNT(*) as total_uploads'))
+            ->groupBy('user_id')
+            ->orderByDesc('total_uploads')
+            ->limit(5)
+            ->get();
+
+        // Recent uploads (all status)
+        $recentUploads = EvidenceUpload::with([
                 'user',
                 'maturityLevel.subkriteria.kriteria',
                 'evidenceRequirement'
             ])
-            ->where('status', 'pending')
-            ->when($request->filled('upload_date'), function ($query) use ($request) {
-                $query->whereDate('uploaded_at', $request->upload_date);
-            })
-            ->when($request->filled('criteria_id'), function ($query) use ($request) {
-                $query->whereHas('maturityLevel.subkriteria', function ($subQuery) use ($request) {
-                    $subQuery->where('criteria_id', $request->criteria_id);
-                });
-            })
-            ->orderBy('uploaded_at')
-            ->limit(12)
+            ->orderBy('uploaded_at', 'desc')
+            ->limit(8)
             ->get();
 
         return view('admin.dashboard', compact(
             'pendingCount',
             'approvedCount',
             'rejectedCount',
-            'recentPendingUploads',
-            'criteriaOptions'
+            'totalCount',
+            'documentsByStatus',
+            'topContributors',
+            'recentUploads'
         ));
     }
 

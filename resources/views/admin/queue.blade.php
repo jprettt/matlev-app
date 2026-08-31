@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Antrean Verifikasi')
+@section('title', 'Penilaian Kinerja')
 
 @section('content')
 @php
@@ -69,7 +69,7 @@
         <header class="flex flex-col justify-between gap-5 border-b border-stone-200 pb-7 md:flex-row md:items-end">
             <div>
                 <p class="text-xs font-extrabold uppercase tracking-[.2em] text-pln-700">Evaluasi Maturity Level K3</p>
-                <h1 class="mt-2 font-display text-2xl font-extrabold text-slate-950 sm:text-3xl">Antrean Verifikasi</h1>
+                <h1 class="mt-2 font-display text-2xl font-extrabold text-slate-950 sm:text-3xl">Penilaian Kinerja</h1>
                 <p class="mt-2 text-sm text-stone-600">Tinjau berkas pending per level. Verifikator harus mengevaluasi dari level paling bawah terlebih dahulu agar level berikutnya dapat dinilai.</p>
             </div>
         </header>
@@ -98,12 +98,6 @@
                             <div>
                                 <span class="rounded-lg bg-[#b89416] px-3 py-1 text-xs font-extrabold text-white">{{ $criteria->code }}</span>
                                 <h2 class="mt-3 font-display text-xl font-extrabold text-slate-950">{{ $criteria->title }}</h2>
-                            </div>
-                            <div class="rounded-xl bg-[#fff7d6] px-4 py-3 text-right">
-                                <p class="text-[10px] font-extrabold uppercase tracking-widest text-[#8d6700]">Level Prioritas</p>
-                                <p class="mt-1 text-2xl font-extrabold text-[#6f4f00]">
-                                    {{ $criteria->subKriterias->flatMap(fn($sub) => $sub->maturityLevels)->filter(fn($level) => ($level->review_status ?? 'neutral') === 'red')->count() }}
-                                </p>
                             </div>
                         </div>
                     </div>

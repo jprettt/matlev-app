@@ -7,7 +7,7 @@
     <div class="py-2 text-stone-950">
         <p class="text-xs uppercase tracking-[0.2em] text-amber-950 font-bold">Pusat Verifikasi</p>
         <h1 class="text-2xl font-extrabold font-display mt-2">Dashboard Verifikasi Dokumen</h1>
-        <p class="text-sm text-amber-950/80 mt-1">Tinjau berkas pending berdasarkan tanggal upload dan kriteria K3.</p>
+        <p class="text-sm text-amber-950/80 mt-1">Pantau status dokumen dan kelola berkas pending dari semua unit kerja.</p>
     </div>
 
     @if(session('success'))
@@ -16,72 +16,154 @@
         </div>
     @endif
 
-    <section class="bg-white border border-stone-200 rounded-3xl p-5 shadow-sm">
-        <form method="GET" action="{{ route('admin.dashboard') }}" class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-            <div>
-                <label class="text-xs font-bold text-stone-600 uppercase">Tanggal Unggah</label>
-                <input type="date" name="upload_date" value="{{ request('upload_date') }}" class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm bg-white">
+    <!-- Statistik Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Card -->
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide">Total Dokumen</p>
+                    <p class="text-3xl font-bold text-blue-900 mt-2">{{ $totalCount }}</p>
+                </div>
+                <div class="text-4xl text-blue-300">📊</div>
             </div>
-
-            <div>
-                <label class="text-xs font-bold text-stone-600 uppercase">Kriteria K3</label>
-                <select name="criteria_id" class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm bg-white">
-                    <option value="">Semua Kriteria</option>
-                    @foreach($criteriaOptions as $criteria)
-                        <option value="{{ $criteria->id }}" {{ (string) request('criteria_id') === (string) $criteria->id ? 'selected' : '' }}>
-                            {{ $criteria->code }} - {{ $criteria->title }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="flex gap-2">
-                <button type="submit" class="flex-1 rounded-xl bg-pln-700 hover:bg-pln-800 text-white text-sm font-bold py-2.5">Terapkan</button>
-                <a href="{{ route('admin.dashboard') }}" class="flex-1 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 text-sm font-bold py-2.5 text-center">Reset</a>
-            </div>
-        </form>
-    </section>
-
-    <section class="bg-white border border-stone-200 rounded-3xl shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-                <thead class="bg-stone-100 text-stone-600 text-[11px] uppercase tracking-wider">
-                    <tr>
-                        <th class="px-4 py-3 text-left">Upload</th>
-                        <th class="px-4 py-3 text-left">User</th>
-                        <th class="px-4 py-3 text-left">Kriteria / Level</th>
-                        <th class="px-4 py-3 text-left">Berkas</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-stone-100">
-                    @forelse($recentPendingUploads as $upload)
-                        <tr class="align-top">
-                            <td class="px-4 py-3 text-xs text-stone-500 whitespace-nowrap">{{ $upload->uploaded_at ? $upload->uploaded_at->timezone(config('app.timezone'))->format('d M Y H:i') . ' WITA' : '-' }}</td>
-                            <td class="px-4 py-3">
-                                <div class="font-semibold text-stone-800">{{ $upload->user->name ?? '-' }}</div>
-                            </td>
-                            <td class="px-4 py-3 text-xs text-stone-600">
-                                <div class="font-semibold text-stone-800">{{ $upload->maturityLevel->subkriteria->kriteria->title ?? '-' }}</div>
-                                <div>{{ $upload->maturityLevel->subkriteria->title ?? '-' }} • Level {{ $upload->maturityLevel->level ?? '-' }}</div>
-                                @if($upload->evidenceRequirement)
-                                    <div class="mt-2 text-[11px] font-bold uppercase tracking-wide text-amber-800">Bukti: {{ $upload->evidenceRequirement->name ?? '-' }}</div>
-                                    @if($upload->evidenceRequirement->description)
-                                        <div class="mt-1 max-w-md text-[11px] leading-5 text-stone-600 whitespace-pre-line">{{ Str::limit(strip_tags($upload->evidenceRequirement->description), 180) }}</div>
-                                    @endif
-                                @endif
-                            </td>
-                            <td class="px-4 py-3 text-xs">
-                                <a href="{{ asset('storage/' . $upload->file_path) }}" target="_blank" class="text-pln-700 hover:text-pln-900 underline">{{ $upload->original_filename }}</a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-10 text-center text-stone-400">Tidak ada dokumen pending sesuai filter.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+            <p class="text-xs text-blue-600 mt-3">Seluruh dokumen yang diupload</p>
         </div>
-    </section>
+
+        <!-- Pending Card -->
+        <div class="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-orange-600 uppercase tracking-wide">Menunggu Verifikasi</p>
+                    <p class="text-3xl font-bold text-orange-900 mt-2">{{ $pendingCount }}</p>
+                </div>
+                <div class="text-4xl text-orange-300">⏳</div>
+            </div>
+            <p class="text-xs text-orange-600 mt-3">Dokumen yang belum diproses</p>
+        </div>
+
+        <!-- Approved Card -->
+        <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-green-600 uppercase tracking-wide">Disetujui</p>
+                    <p class="text-3xl font-bold text-green-900 mt-2">{{ $approvedCount }}</p>
+                </div>
+                <div class="text-4xl text-green-300">✅</div>
+            </div>
+            <p class="text-xs text-green-600 mt-3">Dokumen yang disetujui</p>
+        </div>
+
+        <!-- Rejected Card -->
+        <div class="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold text-red-600 uppercase tracking-wide">Ditolak</p>
+                    <p class="text-3xl font-bold text-red-900 mt-2">{{ $rejectedCount }}</p>
+                </div>
+                <div class="text-4xl text-red-300">❌</div>
+            </div>
+            <p class="text-xs text-red-600 mt-3">Dokumen yang ditolak</p>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    @if($totalCount > 0)
+    <div class="bg-white border border-stone-200 rounded-2xl p-6 shadow-sm">
+        <h3 class="text-sm font-bold text-stone-900 mb-4 uppercase tracking-wide">Persentase Status Dokumen</h3>
+        <div class="space-y-3">
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-green-600">Disetujui</span>
+                    <span class="text-green-600">{{ round(($approvedCount/$totalCount)*100) }}%</span>
+                </div>
+                <div class="w-full bg-stone-200 rounded-full h-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: {{ round(($approvedCount/$totalCount)*100) }}%"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-orange-600">Menunggu</span>
+                    <span class="text-orange-600">{{ round(($pendingCount/$totalCount)*100) }}%</span>
+                </div>
+                <div class="w-full bg-stone-200 rounded-full h-2">
+                    <div class="bg-orange-500 h-2 rounded-full" style="width: {{ round(($pendingCount/$totalCount)*100) }}%"></div>
+                </div>
+            </div>
+            <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                    <span class="text-red-600">Ditolak</span>
+                    <span class="text-red-600">{{ round(($rejectedCount/$totalCount)*100) }}%</span>
+                </div>
+                <div class="w-full bg-stone-200 rounded-full h-2">
+                    <div class="bg-red-500 h-2 rounded-full" style="width: {{ round(($rejectedCount/$totalCount)*100) }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Recent Uploads & Top Contributors Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Recent Uploads -->
+        <div class="lg:col-span-2 bg-white border border-stone-200 rounded-2xl p-6 shadow-sm">
+            <h3 class="text-sm font-bold text-stone-900 mb-4 uppercase tracking-wide">📄 Upload Terbaru</h3>
+            <div class="space-y-3 max-h-72 overflow-y-auto">
+                @forelse($recentUploads as $upload)
+                    <div class="flex items-start gap-3 pb-3 border-b border-stone-100 last:border-b-0">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-semibold text-stone-900 truncate">{{ $upload->user->name ?? 'Tidak diketahui' }}</p>
+                            <p class="text-xs text-stone-600 mt-1">{{ $upload->maturityLevel->subkriteria->kriteria->code ?? '-' }} • Level {{ $upload->maturityLevel->level ?? '-' }}</p>
+                            <p class="text-[11px] text-stone-500 mt-1">{{ $upload->uploaded_at ? $upload->uploaded_at->format('d M Y H:i') : '-' }}</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            @if($upload->status === 'approved')
+                                <span class="inline-block px-2 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-700">✓ Disetujui</span>
+                            @elseif($upload->status === 'pending')
+                                <span class="inline-block px-2 py-1 rounded-full text-[10px] font-bold bg-orange-100 text-orange-700">⏳ Pending</span>
+                            @elseif($upload->status === 'rejected')
+                                <span class="inline-block px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-700">✕ Ditolak</span>
+                            @endif
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-xs text-stone-400 text-center py-4">Tidak ada upload</p>
+                @endforelse
+            </div>
+        </div>
+
+        <!-- Top Contributors -->
+        <div class="bg-white border border-stone-200 rounded-2xl p-6 shadow-sm">
+            <h3 class="text-sm font-bold text-stone-900 mb-4 uppercase tracking-wide">👥 Top Kontributor</h3>
+            <div class="space-y-3">
+                @forelse($topContributors as $index => $contributor)
+                    <div class="flex items-center gap-3">
+                        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span class="text-xs font-bold text-blue-900">{{ $index + 1 }}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-semibold text-stone-900 truncate">{{ $contributor->user->name ?? 'Tidak diketahui' }}</p>
+                            <p class="text-[11px] text-stone-500">{{ $contributor->total_uploads }} dokumen</p>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-xs text-stone-400 text-center py-4">Belum ada kontributor</p>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Action Button to Queue -->
+    <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-6 shadow-sm text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-lg font-bold">Mulai Verifikasi Dokumen</h3>
+                <p class="text-sm text-amber-100 mt-1">Masuk ke antrian verifikasi untuk meninjau {{ $pendingCount }} dokumen yang menunggu</p>
+            </div>
+            <a href="{{ route('admin.queue') }}" class="inline-block bg-amber-900 hover:bg-amber-950 text-white font-bold py-3 px-6 rounded-xl transition">
+                Ke Antrian Verifikasi →
+            </a>
+        </div>
+    </div>
 </div>
 @endsection
