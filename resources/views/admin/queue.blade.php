@@ -199,7 +199,81 @@
                                                         <span>Level terkunci: dokumen pada level sebelumnya masih perlu revisi atau belum selesai dinilai.</span>
                                                     </div>
                                                 </div>
-                                           @elseif($level->evidenceUploads->isEmpty())                                                <div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">                                                    @forelse($level->evidenceRequirements as $requirement)                                                        <div class="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+
+                                                <div class="mt-4 rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                                                    @forelse($level->evidenceRequirements as $requirement)
+                                                        @php
+                                                            $uploads = $level->evidenceUploads
+                                                                ->where('evidence_requirement_id', $requirement->id)
+                                                                ->sortByDesc('uploaded_at')
+                                                                ->values();
+                                                        @endphp
+
+                                                        <div class="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+                                                            <div class="flex items-center justify-between gap-3">
+                                                                <span class="text-[10px] font-extrabold uppercase tracking-[.18em] text-stone-500">
+                                                                    Bukti {{ $loop->iteration }} @if($requirement->is_required) · Wajib @endif
+                                                                </span>
+                                                                <span class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700">
+                                                                    <span class="inline-block h-2 w-2 rounded-full bg-amber-500"></span>
+                                                                    Terkunci
+                                                                </span>
+                                                            </div>
+                                                            <h4 class="mt-3 text-lg font-extrabold text-stone-900">{{ $requirement->name }}</h4>
+                                                            @if($requirement->description)
+                                                                <p class="mt-2 whitespace-pre-line text-sm leading-6 text-stone-600">{{ $requirement->description }}</p>
+                                                            @endif
+                                                            @php
+                                                                $formatText = $requirement->allowed_file_types ?: $requirement->allowed_file_type;
+                                                                $maxSize = $requirement->max_file_size ? round($requirement->max_file_size / 1024, 1) . ' MB' : 'Tidak dibatasi';
+                                                            @endphp
+                                                            @if($formatText || $maxSize)
+                                                                <p class="mt-3 text-xs text-stone-500">
+                                                                    Format: <span class="font-bold text-stone-700">{{ strtoupper($formatText ?: 'PDF') }}</span>
+                                                                    · Maksimal <span class="font-bold text-stone-700">{{ $maxSize }}</span>
+                                                                </p>
+                                                            @endif
+
+                                                            @if($uploads->isEmpty())
+                                                                <p class="mt-3 text-sm text-stone-500">Belum ada file yang diunggah untuk syarat ini.</p>
+                                                            @else
+                                                                @foreach($uploads as $upload)
+                                                                    @php
+                                                                        $fileName = $upload->original_filename ?: basename($upload->file_path ?? '');
+                                                                        $uploadStatus = match ($upload->status) {
+                                                                            'approved' => 'Disetujui',
+                                                                            'rejected' => 'Ditolak',
+                                                                            default => 'Menunggu penilaian',
+                                                                        };
+                                                                    @endphp
+                                                                    <div class="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-3">
+                                                                        <div class="flex items-center justify-between gap-3">
+                                                                            <span class="text-[10px] font-extrabold uppercase tracking-[.18em] text-stone-500">Dokumen</span>
+                                                                            <span class="rounded-full border border-stone-200 bg-white px-2 py-1 text-[10px] font-bold text-stone-700">{{ $uploadStatus }}</span>
+                                                                        </div>
+                                                                        <div class="mt-2 flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2">
+                                                                            <span class="text-xs font-semibold text-stone-700">{{ strtoupper(pathinfo($fileName, PATHINFO_EXTENSION)) }}</span>
+                                                                            <a href="{{ asset('storage/' . $upload->file_path) }}" target="_blank" class="truncate text-sm font-semibold text-[#7a5d00] underline underline-offset-2 hover:text-[#5d4700]">
+                                                                                {{ $fileName }}
+                                                                            </a>
+                                                                        </div>
+                                                                        @if($upload->rejection_note)
+                                                                            <p class="mt-2 text-xs text-rose-700"><strong>Catatan:</strong> {{ $upload->rejection_note }}</p>
+                                                                        @endif
+                                                                    </div>
+                                                                @endforeach
+                                                            @endif
+                                                        </div>
+                                                    @empty
+                                                        <div class="rounded-xl border border-dashed border-stone-200 bg-white px-4 py-6 text-sm text-stone-500">
+                                                            Belum ada keterangan bukti untuk level {{ $level->level }}.
+                                                        </div>
+                                                    @endforelse
+                                                </div>
+                                           @elseif($level->evidenceUploads->isEmpty())
+                                                <div class="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                                                    @forelse($level->evidenceRequirements as $requirement)
+                                                        <div class="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
                                                             <div class="flex items-center justify-between gap-3">
                                                                 <span class="text-[10px] font-extrabold uppercase tracking-[.18em] text-stone-500">
                                                                     Bukti {{ $loop->iteration }} @if($requirement->is_required) · Wajib @endif

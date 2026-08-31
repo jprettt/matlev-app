@@ -42,7 +42,12 @@
                                     @if(strtoupper((string) $level->evidence_mode) === 'NONE')
                                         <div class="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-7 text-center"><p class="text-3xl text-emerald-600">&#10003;</p><p class="mt-2 font-display text-lg font-extrabold text-emerald-900">LEVEL TERPENUHI</p><p class="mt-1 text-sm text-emerald-800">Level ini tidak memerlukan dokumen atau file sebagai bukti pemenuhan.</p></div>
                                     @else
-                                        @if(!$canUploadLevel)<div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-5"><p class="font-bold text-amber-900">Level {{ $level->level }} belum dapat diisi.</p><p class="mt-1 text-sm text-amber-800">Upload bukti Level {{ $previousLevel->level }} terlebih dahulu sebelum mengisi level ini.</p></div>@endif
+                                        @if(!$canUploadLevel)
+                                            <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-5">
+                                                <p class="font-bold text-amber-900">Level {{ $level->level }} belum dapat diisi.</p>
+                                                <p class="mt-1 text-sm text-amber-800">Upload bukti Level {{ $previousLevel->level }} terlebih dahulu sebelum mengisi level ini.</p>
+                                            </div>
+                                        @endif
                                         <h4 class="mt-6 font-display text-lg font-extrabold text-slate-950">Bukti yang Dibutuhkan</h4>
                                         <div class="mt-3 space-y-4">
                                         @foreach($level->evidenceRequirements as $requirement)
