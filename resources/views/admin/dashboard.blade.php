@@ -157,11 +157,11 @@
     <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-6 shadow-sm text-white">
         <div class="flex items-center justify-between">
             <div>
-                <h3 class="text-lg font-bold">Mulai Verifikasi Dokumen</h3>
-                <p class="text-sm text-amber-100 mt-1">Masuk ke antrian verifikasi untuk meninjau {{ $pendingCount }} dokumen yang menunggu</p>
+                <h3 class="text-lg font-bold">Mulai Penilaian Kinerja</h3>
+                <p class="text-sm text-amber-100 mt-1">Masuk ke penilaian kinerja untuk meninjau {{ $pendingCount }} dokumen yang menunggu</p>
             </div>
             <a href="{{ route('admin.queue') }}" class="inline-block bg-amber-900 hover:bg-amber-950 text-white font-bold py-3 px-6 rounded-xl transition">
-                Ke Antrian Verifikasi →
+                Ke Penilaian Kinerja →
             </a>
         </div>
     </div>

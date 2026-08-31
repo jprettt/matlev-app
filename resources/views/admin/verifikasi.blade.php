@@ -6,7 +6,7 @@
 <div class="space-y-6">
     <div class="py-2 text-stone-950">
         <p class="text-xs uppercase tracking-[0.2em] text-amber-950 font-bold">Dokumen Pending</p>
-        <h1 class="text-2xl font-extrabold font-display mt-2">Antrian Verifikasi</h1>
+        <h1 class="text-2xl font-extrabold font-display mt-2">Antrean Verifikasi</h1>
         <p class="text-sm text-amber-950/80 mt-1">Daftar lengkap dokumen yang menunggu verifikasi dari semua unit kerja.</p>
     </div>
 
