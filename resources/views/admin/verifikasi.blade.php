@@ -1,5 +1,11 @@
 @extends('layouts.admin')
 
+@php
+    $allSubCriteriaOptions = \App\Models\Subkriteria::query()
+        ->orderBy('code')
+        ->get(['id', 'code', 'title', 'criteria_id']);
+@endphp
+
 @section('title', 'Antrean Verifikasi')
 
 @section('content')
@@ -18,7 +24,7 @@
 
     <!-- Filter Section -->
     <section class="bg-white border border-stone-200 rounded-2xl p-5 shadow-sm">
-        <form method="GET" action="{{ route('admin.verifikasi') }}" class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+        <form method="GET" action="{{ route('admin.verifikasi') }}" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 items-end">
             <div>
                 <label class="text-xs font-bold text-stone-600 uppercase">Tanggal Unggah</label>
                 <input type="date" name="upload_date" value="{{ request('upload_date') }}" class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm bg-white">
@@ -26,7 +32,7 @@
 
             <div>
                 <label class="text-xs font-bold text-stone-600 uppercase">Kriteria K3</label>
-                <select name="criteria_id" class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm bg-white">
+                <select name="criteria_id" id="criteria_filter" class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm bg-white">
                     <option value="">Semua Kriteria</option>
                     @foreach($criteriaOptions as $criteria)
                         <option value="{{ $criteria->id }}" {{ (string) request('criteria_id') === (string) $criteria->id ? 'selected' : '' }}>
@@ -34,6 +40,23 @@
                         </option>
                     @endforeach
                 </select>
+            </div>
+
+            <div>
+                <label class="text-xs font-bold text-stone-600 uppercase">Sub Kriteria</label>
+                <select id="sub_criteria_filter" name="sub_criteria_id" class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm bg-white">
+                    <option value="">Semua Sub Kriteria</option>
+                    @foreach($allSubCriteriaOptions as $subCriteria)
+                        <option value="{{ $subCriteria->id }}" data-criteria-id="{{ $subCriteria->criteria_id }}" {{ (string) request('sub_criteria_id') === (string) $subCriteria->id ? 'selected' : '' }}>
+                            {{ $subCriteria->code }} - {{ $subCriteria->title }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div>
+                <label class="text-xs font-bold text-stone-600 uppercase">Nama Bukti</label>
+                <input type="text" name="evidence_name" value="{{ request('evidence_name') }}" placeholder="Cari nama bukti..." class="mt-1 w-full rounded-xl border border-stone-300 px-3 py-2 text-sm bg-white">
             </div>
 
             <div class="flex gap-2">
@@ -110,4 +133,49 @@
         @endif
     </section>
 </div>
+
+<script>
+    (function () {
+        const criteriaFilter = document.getElementById('criteria_filter');
+        const subCriteriaFilter = document.getElementById('sub_criteria_filter');
+
+        if (!criteriaFilter || !subCriteriaFilter) {
+            return;
+        }
+
+        const allSubCriteriaOptions = Array.from(subCriteriaFilter.querySelectorAll('option[data-criteria-id]'));
+
+        function syncSubCriteriaOptions() {
+            const selectedCriteriaId = criteriaFilter.value;
+            const currentSelectedValue = subCriteriaFilter.value;
+
+            const filteredOptions = allSubCriteriaOptions.filter((option) => {
+                return !selectedCriteriaId || String(option.dataset.criteriaId) === String(selectedCriteriaId);
+            });
+
+            const nextOptions = [document.createElement('option')];
+            nextOptions[0].value = '';
+            nextOptions[0].textContent = 'Semua Sub Kriteria';
+
+            filteredOptions.forEach((option) => {
+                const nextOption = document.createElement('option');
+                nextOption.value = option.value;
+                nextOption.textContent = option.textContent;
+                nextOptions.push(nextOption);
+            });
+
+            subCriteriaFilter.innerHTML = '';
+            nextOptions.forEach((option) => subCriteriaFilter.appendChild(option));
+
+            if (currentSelectedValue && filteredOptions.some((option) => option.value === currentSelectedValue)) {
+                subCriteriaFilter.value = currentSelectedValue;
+            } else {
+                subCriteriaFilter.value = '';
+            }
+        }
+
+        criteriaFilter.addEventListener('change', syncSubCriteriaOptions);
+        syncSubCriteriaOptions();
+    })();
+</script>
 @endsection

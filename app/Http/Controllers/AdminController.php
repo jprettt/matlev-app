@@ -117,6 +117,12 @@ class AdminController extends Controller
     public function verifikasi(Request $request)
     {
         $criteriaOptions = Kriteria::orderBy('code')->get(['id', 'code', 'title']);
+        $subCriteriaOptions = Subkriteria::query()
+            ->when($request->filled('criteria_id'), function ($query) use ($request) {
+                $query->where('criteria_id', $request->criteria_id);
+            })
+            ->orderBy('code')
+            ->get(['id', 'code', 'title', 'criteria_id']);
 
         $pendingUploads = EvidenceUpload::with([
                 'user',
@@ -132,11 +138,21 @@ class AdminController extends Controller
                     $subQuery->where('criteria_id', $request->criteria_id);
                 });
             })
+            ->when($request->filled('sub_criteria_id'), function ($query) use ($request) {
+                $query->whereHas('maturityLevel.subkriteria', function ($subQuery) use ($request) {
+                    $subQuery->where('id', $request->sub_criteria_id);
+                });
+            })
+            ->when($request->filled('evidence_name'), function ($query) use ($request) {
+                $query->whereHas('evidenceRequirement', function ($subQuery) use ($request) {
+                    $subQuery->where('name', 'like', '%' . trim($request->evidence_name) . '%');
+                });
+            })
             ->orderBy('uploaded_at', 'desc')
             ->paginate(15)
             ->withQueryString();
 
-        return view('admin.verifikasi', compact('pendingUploads', 'criteriaOptions'));
+        return view('admin.verifikasi', compact('pendingUploads', 'criteriaOptions', 'subCriteriaOptions'));
     }
 
     public function activityHistory(Request $request)

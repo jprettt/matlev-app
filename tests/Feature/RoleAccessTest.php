@@ -96,6 +96,49 @@ class RoleAccessTest extends TestCase
             ->assertViewHas('stats', fn ($stats) => $stats['totalApproved'] === 2 && $stats['totalSlots'] === 1);
     }
 
+    public function test_admin_verification_queue_filters_by_subcriteria_and_evidence_name(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $criteria = Kriteria::create(['code' => 'K-10', 'title' => 'Kriteria Filter']);
+        $subOne = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => '10.1', 'title' => 'Sub Kriteria A']);
+        $subTwo = Subkriteria::create(['criteria_id' => $criteria->id, 'code' => '10.2', 'title' => 'Sub Kriteria B']);
+        $levelOne = MaturityLevel::create(['sub_criteria_id' => $subOne->id, 'level' => 1, 'evidence_requirement' => 'PDF']);
+        $levelTwo = MaturityLevel::create(['sub_criteria_id' => $subTwo->id, 'level' => 1, 'evidence_requirement' => 'PDF']);
+        $requirementOne = EvidenceRequirement::create(['maturity_level_id' => $levelOne->id, 'name' => 'Dokumen Monitoring K3', 'allowed_file_type' => 'pdf', 'max_file_size' => 10240]);
+        $requirementTwo = EvidenceRequirement::create(['maturity_level_id' => $levelTwo->id, 'name' => 'Form Inspeksi K3', 'allowed_file_type' => 'pdf', 'max_file_size' => 10240]);
+        $userOne = User::factory()->create(['role' => 'user']);
+        $userTwo = User::factory()->create(['role' => 'user']);
+
+        EvidenceUpload::create([
+            'maturity_level_id' => $levelOne->id,
+            'evidence_requirement_id' => $requirementOne->id,
+            'user_id' => $userOne->id,
+            'file_path' => 'a.pdf',
+            'original_filename' => 'a.pdf',
+            'status' => 'pending',
+            'uploaded_at' => now(),
+        ]);
+
+        EvidenceUpload::create([
+            'maturity_level_id' => $levelTwo->id,
+            'evidence_requirement_id' => $requirementTwo->id,
+            'user_id' => $userTwo->id,
+            'file_path' => 'b.pdf',
+            'original_filename' => 'b.pdf',
+            'status' => 'pending',
+            'uploaded_at' => now(),
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('admin.verifikasi', [
+                'sub_criteria_id' => $subOne->id,
+                'evidence_name' => 'Monitoring',
+            ]))
+            ->assertOk()
+            ->assertSee('Dokumen Monitoring K3')
+            ->assertDontSee('Form Inspeksi K3');
+    }
+
     public function test_verifier_evaluation_is_added_to_activity_log(): void
     {
         [$owner, $other, $upload] = $this->createDocumentFixture();

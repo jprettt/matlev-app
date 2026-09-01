@@ -82,6 +82,7 @@
                 <thead class="bg-stone-100/90 text-stone-600 uppercase text-[11px] font-bold tracking-wider border-b border-stone-200 text-center">
                     <tr>
                         <th class="p-4 sm:px-6 text-center">Waktu</th>
+                        <th class="p-4 sm:px-6 text-center min-w-[180px]">Aktor</th>
                         <th class="p-4 sm:px-6 text-center min-w-[180px]">Letak File</th>
                         <th class="p-4 sm:px-6 text-center w-24">Level</th>
                         <th class="p-4 sm:px-6 text-center min-w-[220px]">Jenis Bukti</th>
@@ -93,6 +94,12 @@
                         @php
                             $actor = $log->actor->name ?? 'User';
                             $actorRole = $log->actor->role ?? 'user';
+                            $actorNameClasses = match ($actorRole) {
+                                'user' => 'text-blue-700',
+                                'admin' => 'text-red-600',
+                                'atasan' => 'text-sky-700',
+                                default => 'text-stone-700',
+                            };
                             $requester = $log->targetUser->name ?? 'user';
                             $filename = $log->filename ?? 'dokumen';
                             [$descriptionBeforeFile, $descriptionAfterFile] = match ($log->activity_type) {
@@ -126,6 +133,9 @@
                             <td class="p-4 sm:px-6 whitespace-nowrap text-center">
                                 <span class="font-bold text-stone-800 block">{{ $log->occurred_at?->timezone(config('app.timezone'))->format('d M Y') ?? '-' }}</span>
                                 <span class="text-[11px] text-stone-500">{{ $log->occurred_at?->timezone(config('app.timezone'))->format('H:i') ?? '-' }} WITA</span>
+                            </td>
+                            <td class="p-4 sm:px-6 text-center min-w-[180px]">
+                                <div class="font-extrabold {{ $actorNameClasses }}">{{ $actor }}</div>
                             </td>
                             <td class="p-4 sm:px-6 text-stone-800 text-center min-w-[180px] whitespace-nowrap">{{ $locationText ?: '-' }}</td>
                             <td class="p-4 sm:px-6 w-24 text-center whitespace-nowrap">

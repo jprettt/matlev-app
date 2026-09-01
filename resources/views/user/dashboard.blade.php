@@ -7,10 +7,10 @@
     activeSlide: 1,
     totalSlides: 3,
     criteriaSlide: 1,
-    totalCriteriaSlides: {{ $criterias->count() }},
+    totalCriteriaSlides: {{ $criterias->count() + 1 }},
     timer: null,
     startAutoPlay() {
-        this.timer = setInterval(() => { this.nextSlide(); }, 6000);
+        this.timer = setInterval(() => { this.nextSlide(); }, 7000);
     },
     stopAutoPlay() {
         if (this.timer) clearInterval(this.timer);
@@ -65,13 +65,14 @@
 
         <!-- SLIDES WRAPPER (CENTERED) -->
         <div class="relative z-10 flex items-center justify-center w-full" style="min-height: calc(100vh - 106px);">
-            <div class="w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-12">
+            <div class="relative w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 py-12" style="min-height: 560px;">
 
                 <!-- SLIDE 1: SELAMAT DATANG -->
                 <div x-show="activeSlide === 1" 
-                     x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-x-12" x-transition:enter-end="opacity-100 translate-x-0"
-                     x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-12"
-                     class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+                     x-transition:enter="transition ease-out duration-1000" x-transition:enter-start="opacity-0 translate-y-5" x-transition:enter-end="opacity-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-700" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-5"
+                     class="absolute inset-0 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center"
+                     style="will-change: transform, opacity;">
                     
                     <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
                         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pln-100 text-pln-800 text-xs font-bold tracking-wide">
@@ -111,9 +112,24 @@
                                 <span class="bg-accent-400 text-pln-900 text-[10px] font-bold px-2.5 py-1 rounded uppercase">0–5</span>
                             </div>
                             <div class="relative min-h-[250px] overflow-hidden">
+                                @php
+                                    $overallCriteriaScore = $criterias->isEmpty() ? 0 : round($criterias->avg(fn ($criterion) => $criterion->scoreForUser()), 2);
+                                    $overallCriteriaPercent = round(($overallCriteriaScore / 5) * 100);
+                                @endphp
+
+                                <div x-cloak x-show="criteriaSlide === 1" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-500" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-3" class="absolute inset-0 flex min-h-[250px] flex-col" style="will-change: transform, opacity;">
+                                    <p class="text-3xl font-extrabold text-white">Overall</p>
+                                    <h3 class="mt-3 min-h-[56px] font-display text-xl font-extrabold leading-tight text-white">Rata-rata semua kriteria</h3>
+                                    <div class="mt-auto">
+                                        <div class="flex items-end justify-between gap-3"><span class="text-xs text-pln-300">Nilai Keseluruhan</span><span class="text-3xl font-extrabold text-accent-400">{{ number_format($overallCriteriaScore, 2) }}<span class="text-sm text-pln-300"> / 5</span></span></div>
+                                        <div class="mt-2 h-2 overflow-hidden rounded-full bg-white/15"><div class="h-full rounded-full bg-accent-400" style="width: {{ $overallCriteriaPercent }}%"></div></div>
+                                        <a href="{{ route('user.kriteria') }}" class="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-accent-400 px-4 py-3 text-sm font-extrabold text-pln-950 transition hover:bg-accent-300">Lihat Ikhtisar Kriteria <span class="ml-2">&rarr;</span></a>
+                                    </div>
+                                </div>
+
                                 @foreach($criterias as $criteria)
                                     @php $criteriaScore = $criteria->scoreForUser(); $criteriaPercent = round(($criteriaScore / 5) * 100); @endphp
-                                    <div x-cloak x-show="criteriaSlide === {{ $loop->iteration }}" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-x-5" x-transition:enter-end="opacity-100 translate-x-0" x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-5" class="absolute inset-0 flex min-h-[250px] flex-col">
+                                    <div x-cloak x-show="criteriaSlide === {{ $loop->iteration + 1 }}" x-transition:enter="transition ease-out duration-700" x-transition:enter-start="opacity-0 translate-y-3" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-500" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-3" class="absolute inset-0 flex min-h-[250px] flex-col" style="will-change: transform, opacity;">
                                         <p class="text-3xl font-extrabold text-white">{{ $criteria->code }}</p>
                                         <h3 class="mt-3 min-h-[56px] font-display text-xl font-extrabold leading-tight text-white">{{ $criteria->title }}</h3>
                                         <div class="mt-auto">
@@ -126,7 +142,12 @@
                             </div>
                             <div class="mt-5 flex items-center justify-between border-t border-white/15 pt-4">
                                 <button type="button" @click="prevCriteria()" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-lg text-white transition hover:bg-white/10" aria-label="Kriteria sebelumnya">&larr;</button>
-                                <div class="flex items-center gap-1.5">@foreach($criterias as $criteria)<button type="button" @click="criteriaSlide={{ $loop->iteration }}" :class="criteriaSlide === {{ $loop->iteration }} ? 'bg-accent-400' : 'bg-white/30'" class="h-1.5 w-5 rounded-full" aria-label="Kriteria {{ $criteria->code }}"></button>@endforeach</div>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" @click="criteriaSlide = 1" :class="criteriaSlide === 1 ? 'bg-accent-400' : 'bg-white/30'" class="h-1.5 w-5 rounded-full" aria-label="Nilai keseluruhan"></button>
+                                    @foreach($criterias as $criteria)
+                                        <button type="button" @click="criteriaSlide={{ $loop->iteration + 1 }}" :class="criteriaSlide === {{ $loop->iteration + 1 }} ? 'bg-accent-400' : 'bg-white/30'" class="h-1.5 w-5 rounded-full" aria-label="Kriteria {{ $criteria->code }}"></button>
+                                    @endforeach
+                                </div>
                                 <button type="button" @click="nextCriteria()" class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-lg text-white transition hover:bg-white/10" aria-label="Kriteria berikutnya">&rarr;</button>
                             </div>
                         </div>
@@ -135,9 +156,10 @@
 
                 <!-- SLIDE 2: STATUS DOKUMEN -->
                 <div x-show="activeSlide === 2" 
-                     x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-x-12" x-transition:enter-end="opacity-100 translate-x-0"
-                     x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-12"
-                     class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+                     x-transition:enter="transition ease-out duration-1000" x-transition:enter-start="opacity-0 translate-y-5" x-transition:enter-end="opacity-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-700" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-5"
+                     class="absolute inset-0 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center"
+                     style="will-change: transform, opacity;">
                     
                     <div class="lg:col-span-5 space-y-5 text-center lg:text-left">
                         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-100 text-accent-700 text-xs font-bold tracking-wide">
@@ -204,9 +226,10 @@
 
                 <!-- SLIDE 3: PROGRESS MATURITY -->
                 <div x-show="activeSlide === 3" 
-                     x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 translate-x-12" x-transition:enter-end="opacity-100 translate-x-0"
-                     x-transition:leave="transition ease-in duration-300" x-transition:leave-start="opacity-100 translate-x-0" x-transition:leave-end="opacity-0 -translate-x-12"
-                     class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+                     x-transition:enter="transition ease-out duration-1000" x-transition:enter-start="opacity-0 translate-y-5" x-transition:enter-end="opacity-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-700" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-5"
+                     class="absolute inset-0 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center"
+                     style="will-change: transform, opacity;">
                     
                     <div class="lg:col-span-7 space-y-5 text-center lg:text-left">
                         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pln-100 text-pln-800 text-xs font-bold tracking-wide">
